@@ -21,6 +21,7 @@ mod options;
 mod regex_go;
 pub mod selector;
 mod settings;
+mod shared;
 pub mod text;
 pub mod url;
 
@@ -37,8 +38,16 @@ pub use rust_domdistiller::dom::{Attribute, Document, Kind, Node, NodeId};
 pub use rust_htmldate;
 pub use rust_readability;
 pub use rust_readability::Url;
+pub use shared::{parse_shared_bytes, parse_shared_html, SharedDocument};
 
 pub const GO_REFERENCE_COMMIT: &str = "72dce36bfe95502563533cf68a9050370a3d7081";
+
+pub fn extract_shared_document(
+    document: &SharedDocument,
+    options: &Options,
+) -> Result<ExtractResult, Error> {
+    extract_document(document.document(), options)
+}
 
 pub fn parse_html(source: &str) -> Document {
     let mut output = HtmlOutput(Document { nodes: Vec::new() });
@@ -216,6 +225,62 @@ pub(crate) fn from_readability(parsed: rust_readability::Document) -> Document {
 
 #[cfg(test)]
 mod html_tests {
+    #[test]
+    fn shared_input_is_independent_of_extractor_order() {
+        let html = format!("<html lang='en'><head><title>Shared article</title></head><body><article><h1>Shared article</h1><p>{}</p></article></body></html>", "A substantial article sentence, with additional context and detailed evidence. ".repeat(30));
+        let document = super::parse_shared_bytes(html.as_bytes()).unwrap();
+        let snapshot = document.clone();
+        let options = super::Options {
+            enable_fallback: false,
+            fallback_candidates: None,
+            exclude_comments: true,
+            ..Default::default()
+        };
+        let expected_trafilatura = super::extract_document(document.document(), &options).unwrap();
+        let distiller_options = rust_domdistiller::Options {
+            skip_pagination: true,
+            ..Default::default()
+        };
+        let expected_distiller =
+            rust_domdistiller::apply(document.document(), &distiller_options).unwrap();
+        let expected_readability = rust_readability::Parser::new()
+            .parse_dom(&rust_readability::parse_dom(&html), None)
+            .unwrap();
+        for order in [
+            [0, 1, 2],
+            [0, 2, 1],
+            [1, 0, 2],
+            [1, 2, 0],
+            [2, 0, 1],
+            [2, 1, 0],
+        ] {
+            for engine in order {
+                match engine {
+                    0 => {
+                        let actual = rust_readability::Parser::new()
+                            .parse_shared_document(&document, None)
+                            .unwrap();
+                        assert_eq!(actual.text().unwrap(), expected_readability.text().unwrap());
+                        assert_eq!(actual.html().unwrap(), expected_readability.html().unwrap());
+                    }
+                    1 => {
+                        let actual =
+                            rust_domdistiller::apply_shared_document(&document, &distiller_options)
+                                .unwrap();
+                        assert_eq!(actual.text, expected_distiller.text);
+                        assert_eq!(actual.node, expected_distiller.node);
+                    }
+                    _ => {
+                        let actual = super::extract_shared_document(&document, &options).unwrap();
+                        assert_eq!(actual.content_text, expected_trafilatura.content_text);
+                        assert_eq!(actual.content_node, expected_trafilatura.content_node);
+                    }
+                }
+                assert_eq!(document, snapshot);
+            }
+        }
+    }
+
     #[test]
     #[ignore = "requires the local Readability Go HTML corpus"]
     fn direct_parser_html_corpus() {

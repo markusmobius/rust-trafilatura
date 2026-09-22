@@ -895,9 +895,8 @@ dependencies = [
 
 [[package]]
 name = "rust-domdistiller"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86ee78455228a72f9133dbd11b51c85fd13fc9b3cb4b708bd239671f71d489b6"
+version = "1.0.1"
+source = "git+https://github.com/markusmobius/rust-domdistiller?tag=v1.0.1#e95bff0cea7f7b9639abe04a8531b220b3ee4a6e"
 dependencies = [
  "encoding_rs",
  "html5ever 0.29.1",
@@ -943,8 +942,8 @@ dependencies = [
 
 [[package]]
 name = "rust-readability-v2"
-version = "0.6.1"
-source = "git+https://github.com/markusmobius/rust-readability?tag=v0.6.1#5863f2ace1171a6b6e946a05e6b3915d0b4c658d"
+version = "0.6.2"
+source = "git+https://github.com/markusmobius/rust-readability?tag=v0.6.2#7180c261cff311794b1b75ff3eae2a2bc63fd1c8"
 dependencies = [
  "aho-corasick",
  "chrono",
@@ -968,7 +967,7 @@ dependencies = [
 
 [[package]]
 name = "rust-trafilatura"
-version = "2.2.2"
+version = "2.2.3"
 dependencies = [
  "chrono",
  "encoding_rs",

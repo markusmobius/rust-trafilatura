@@ -6,9 +6,10 @@ formatting, links/images, JSON-LD, dates, language filtering, deduplication,
 recovery and native fallback extractors. The `rustHTML` executable implements the
 Trafilatura-only contract of the existing Go worker.
 
-**Development version 0.1.0, not published.** The parent Go application and
-released component crates are unchanged. Rust-HtmlDate and Rust-Readability
-currently require the sibling checkouts described below.
+**Version 2.2.3** is a GitHub source release requiring Rust 1.98.1 and a native
+C toolchain. The repository remains private and requires authorized Git access.
+Dependencies use released registry packages or pinned Git tags/commits; sibling
+checkouts are not required. This crate is not published to crates.io.
 
 ## Compatibility
 
@@ -34,6 +35,11 @@ text renderer. Same-DOM selected-content comparisons are reported separately
 from complete native output comparisons. See [UPSTREAM.md](UPSTREAM.md).
 
 ## Library
+
+```toml
+[dependencies]
+rust-trafilatura = { git = "https://github.com/markusmobius/rust-trafilatura", tag = "v2.2.3" }
+```
 
 ```rust
 use rust_trafilatura::{extract, HtmlDateMode, Options, Url};
@@ -61,6 +67,12 @@ assert!(html.contains("<p>"));
   parses HTML. Reader/decompression failures are returned as `Error::Io`.
 - `parse_html(&str)` uses the ReadabilityV2 parser's output sink to build the
   extraction DOM without an intermediate Readability arena.
+- `parse_shared_html(&str)` and `parse_shared_bytes(&[u8])` construct a
+  `SharedDocument` for all three native extractors. The byte API decodes bytes
+  already in memory; it does not open files.
+- `extract_shared_document(&SharedDocument, &Options)` borrows that input.
+  The same object implements Readability's `DomSource` and DomDistiller's
+  `AsRef<Document>` input contract, retaining namespaces for Readability.
 - `extract_document(&Document, &Options)` and `extract_node(&Document, NodeId,
   &Options)` clone caller-owned input. They do not decode or normalize it again.
 - `ExtractResult` contains owned content/comment trees, plain text and metadata.
@@ -83,6 +95,11 @@ All extraction is native and caller-scheduled. There is no production Go/Python
 bridge, page fetcher, model download or internal worker pool. The language model
 is embedded and initialized lazily. Date and fallback adapters import nodes
 without serializing the caller's tree into another parser.
+
+Shared input does not replace the engines' internal working trees. Each engine
+makes its own required copies; Readability imports once per call and then uses
+copy-on-write retries. The shared object is unchanged by extraction. This is an
+additive library API; it does not change the production worker protocol below.
 
 ## Worker
 
@@ -124,26 +141,34 @@ the Go worker's zero-valued output contract.
 
 | Library | Version | Role |
 | --- | --- | --- |
-| rust-domdistiller | 1.0.0 | Owned DOM and fallback extraction |
-| rust-htmldate | 1.10.1 plus local tree-import API | Date extraction |
+| rust-domdistiller | 1.0.1, pinned Git tag | Owned DOM and fallback extraction |
+| rust-htmldate | 1.10.2, pinned Git tag | Date extraction |
 | rust-dateparser | 1.4.7, pinned Git source | Indirect through HtmlDate |
 | rust-dateutil | 2.9.1, pinned Git source | Indirect through date libraries |
 | rust-py3langid | 0.4.0 | Embedded native language identification |
-| rust-readability-v2 | 0.6.0 plus local parser-output API | HTML parser and Readability fallback |
+| rust-readability-v2 | 0.6.2, pinned Git tag | HTML parser, shared-input view and Readability fallback |
 | mimalloc | 0.1.48 | Default allocator for the worker and benchmark executables only |
 
-Rust-HtmlDate uses `../rust-htmldate` for its authorized, unreleased
-`Document::from_tree` API. Rust-Readability uses `../rust-readability` for the
-authorized, unreleased `parse_html_into` API. The selected graph is therefore
-**not registry-only**. Other direct component dependencies are released crates. Exact sources,
-versions and checksums are in [Cargo.lock](Cargo.lock). Publishing the local API
-or this crate requires a separate release decision.
+The selected graph is **not registry-only**. Exact source commits, versions and
+checksums are retained in [Cargo.lock](Cargo.lock). No local path dependencies
+or runtime Go/Python bridges are required.
 
 Release executables use ThinLTO and the `mimalloc` feature by default. Build with
 `--no-default-features` to use the platform allocator. The library itself does
 not install a global allocator, so an embedding application retains control.
 Compiler profile and allocator choices are part of the benchmark identity;
 executable timings do not describe every embedding application's configuration.
+
+## Patch Qualification
+
+The [paired extraction benchmark](https://github.com/markusmobius/content-extractor-benchmark/blob/5edcfd090f1590c9bbf26d7543fbdc2ab615e117/rust_shared_performance_2026_09_21.json)
+compares 2.2.2 with 2.2.3 in coordinated three-engine Rust suites on 2,659 pages.
+One full warmup precedes four paired passes. File reads are untimed and parsing
+is measured separately; **Trafilatura fallback and comments are disabled**.
+Extraction takes 5.824 versus 5.838 ms/page on the same best two passes (+0.24%);
+the all-four-pass difference is +0.25%. Both pass the 5% regression gate, and
+scored text, metadata and errors match on every page. These are Windows GNU,
+Rust 1.98.1, ThinLTO/mimalloc results, not a standalone or Go/Rust speed comparison.
 
 ## Verification
 
