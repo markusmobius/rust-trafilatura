@@ -942,14 +942,16 @@ dependencies = [
 
 [[package]]
 name = "rust-readability-v2"
-version = "0.6.2"
-source = "git+https://github.com/markusmobius/rust-readability?tag=v0.6.2#7180c261cff311794b1b75ff3eae2a2bc63fd1c8"
+version = "0.6.3"
+source = "git+https://github.com/markusmobius/rust-readability?tag=v0.6.3#52ec5ae744fb132e011ad9153ad3071e1227bdeb"
 dependencies = [
  "aho-corasick",
  "chrono",
  "encoding_rs",
  "html5ever 0.39.0",
  "html5gum",
+ "jetscii",
+ "log",
  "markup5ever 0.14.1",
  "markup5ever_rcdom 0.39.0+unofficial",
  "percent-encoding",
@@ -967,7 +969,7 @@ dependencies = [
 
 [[package]]
 name = "rust-trafilatura"
-version = "2.2.3"
+version = "2.2.4"
 dependencies = [
  "chrono",
  "encoding_rs",

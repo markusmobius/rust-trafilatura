@@ -73,10 +73,15 @@ fn readability_kind(kind: rust_readability::Kind) -> Kind {
 struct HtmlOutput(Document);
 
 impl HtmlOutput {
-    fn into_document(mut self, root: NodeId) -> Document {
+    fn into_document(self, root: NodeId) -> Document {
+        self.into_document_with(root, |_| {})
+    }
+
+    fn into_document_with(mut self, root: NodeId, mut visit: impl FnMut(NodeId)) -> Document {
         let mut nodes = Vec::<Node>::with_capacity(self.0.nodes.len());
         let mut pending = vec![(root, None)];
         while let Some((original, parent)) = pending.pop() {
+            visit(original);
             let source = &mut self.0.nodes[original];
             let index = nodes.len();
             pending.extend(
@@ -296,6 +301,13 @@ mod html_tests {
             let root = rust_readability::parse_html_direct(source, &mut output);
             let expected = super::from_readability(rust_readability::parse_html(source));
             assert_eq!(output.into_document(root), expected, "{}", case["id"]);
+            let shared = super::parse_shared_html(source);
+            assert_eq!(
+                rust_readability::DomSource::copy_for_readability(&shared),
+                rust_readability::parse_dom(source),
+                "{}",
+                case["id"]
+            );
             checked += 1;
         }
         assert_eq!(checked, 1793);

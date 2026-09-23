@@ -1,6 +1,6 @@
 [package]
 name = "rust-trafilatura"
-version = "2.2.3"
+version = "2.2.4"
 edition = "2021"
 rust-version = "1.98.1"
 description = "Native Rust port of Go-Trafilatura's HTML extraction pipeline"
@@ -25,7 +25,7 @@ regex = "1.13.1"
 rust-domdistiller = { version = "=1.0.1", git = "https://github.com/markusmobius/rust-domdistiller", tag = "v1.0.1" }
 rust-htmldate = { version = "=1.10.2", git = "https://github.com/markusmobius/rust-htmldate", tag = "v1.10.2" }
 rust-py3langid = "=0.4.0"
-rust-readability-v2 = { version = "=0.6.2", git = "https://github.com/markusmobius/rust-readability", tag = "v0.6.2" }
+rust-readability-v2 = { version = "=0.6.3", git = "https://github.com/markusmobius/rust-readability", tag = "v0.6.3" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value", "unbounded_depth"] }
 serde_stacker = "=0.1.14"

@@ -6,10 +6,11 @@ formatting, links/images, JSON-LD, dates, language filtering, deduplication,
 recovery and native fallback extractors. The `rustHTML` executable implements the
 Trafilatura-only contract of the existing Go worker.
 
-**Version 2.2.3** is a GitHub source release requiring Rust 1.98.1 and a native
+**Version 2.2.4** is a GitHub source release requiring Rust 1.98.1 and a native
 C toolchain. The repository remains private and requires authorized Git access.
 Dependencies use released registry packages or pinned Git tags/commits; sibling
-checkouts are not required. This crate is not published to crates.io.
+checkouts are not required. This crate is not published to crates.io. Release
+changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibility
 
@@ -38,7 +39,7 @@ from complete native output comparisons. See [UPSTREAM.md](UPSTREAM.md).
 
 ```toml
 [dependencies]
-rust-trafilatura = { git = "https://github.com/markusmobius/rust-trafilatura", tag = "v2.2.3" }
+rust-trafilatura = { git = "https://github.com/markusmobius/rust-trafilatura", tag = "v2.2.4" }
 ```
 
 ```rust
@@ -101,6 +102,12 @@ makes its own required copies; Readability imports once per call and then uses
 copy-on-write retries. The shared object is unchanged by extraction. This is an
 additive library API; it does not change the production worker protocol below.
 
+Version 2.2.4 builds shared input directly in the final document arena, retaining
+ordered attributes and a namespace sidecar through reachable-preorder
+compaction. Readability 0.6.3 supplies eager tokenizer fast paths. Parsing still
+finishes all decoding, normalization, DOM construction and temporary cleanup
+before extraction starts; no content is omitted or materialized lazily.
+
 ## Worker
 
 Build with `cargo build --locked --release --bin rustHTML`.
@@ -146,7 +153,7 @@ the Go worker's zero-valued output contract.
 | rust-dateparser | 1.4.7, pinned Git source | Indirect through HtmlDate |
 | rust-dateutil | 2.9.1, pinned Git source | Indirect through date libraries |
 | rust-py3langid | 0.4.0 | Embedded native language identification |
-| rust-readability-v2 | 0.6.2, pinned Git tag | HTML parser, shared-input view and Readability fallback |
+| rust-readability-v2 | 0.6.3, pinned Git tag | HTML parser, shared-input view and Readability fallback |
 | mimalloc | 0.1.48 | Default allocator for the worker and benchmark executables only |
 
 The selected graph is **not registry-only**. Exact source commits, versions and

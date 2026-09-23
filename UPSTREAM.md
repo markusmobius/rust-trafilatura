@@ -36,23 +36,23 @@ the fallback algorithms.
 | Go-DomDistiller | `25b8d046ffb4053bf68345d6fa59bc9ae1961ad8` |
 | Go HTML parser | `golang.org/x/net v0.59.0` |
 | Rust toolchain | 1.98.1, edition 2021 |
-| Rust-Readability | Local `../rust-readability`, 0.6.0 plus authorized parser-output API |
-| Rust-DomDistiller | Registry `rust-domdistiller =1.0.0` |
+| Rust-Readability | 0.6.3, Git `52ec5ae744fb132e011ad9153ad3071e1227bdeb` |
+| Rust-DomDistiller | 1.0.1, Git `e95bff0cea7f7b9639abe04a8531b220b3ee4a6e` |
 | Rust-Py3langid | Registry `rust-py3langid =0.4.0` |
-| Rust-HtmlDate | Local `../rust-htmldate`, 1.10.1 plus authorized tree-import API |
+| Rust-HtmlDate | 1.10.2, Git `912ede5196710f23214bb5a831437c35ed5ff5b6` |
 | Rust-DateParser | 1.4.7, Git `1e3e2feccd8662113e4092ca87a5567e4e23bc3c` |
 | Rust-Dateutil | 2.9.1, Git `3a7537dd3a4e223756fa31fb1941a10da4c78b30` |
 
 The port is native, accepts supplied input, and leaves scheduling to callers.
 There is no production interpreter bridge, acquisition subsystem, internal
 worker pool or model download. Development references may invoke Go and Python.
-All current work is local and unpublished; no parent application upgrade or
-component republication is implied.
+Version 2.2.4 is a GitHub source release in the existing private repository;
+no crates.io publication or parent application upgrade is implied.
 
 The dependency graph is **not registry-only**. [Cargo.lock](Cargo.lock) records
-exact sources and checksums. The local HtmlDate and Readability APIs must be
-distributed or separately released before standalone-checkout builds and hosted CI are claimed.
-Existing released dependency archives are unchanged.
+exact sources and checksums. HtmlDate and Readability's required APIs are in
+the pinned Git releases. Builds require authorized access to those sources,
+not sibling worktrees. Existing released dependency archives are unchanged.
 
 The Python reference uses Python 3.12.13, lxml 6.1.3, py3langid 0.4.0,
 NumPy 2.5.2, HtmlDate 1.10.0, dateparser 1.4.2 and dateutil 2.9.0.post0.
@@ -138,6 +138,15 @@ order and stop early only for first-match queries. Metadata can borrow already
 normalized class strings and read author candidates without cloning the page.
 Ordered cleaning collects matching tags once and rechecks reachability before
 each tag's removals. Native fallbacks and language/date work are not bypassed.
+
+The 2.2.4 shared parser writes directly into the final DomDistiller document
+arena and compacts reachable nodes into preorder while moving the matching
+namespace sidecar. It preserves every node, ordered attribute and namespace.
+Readability 0.6.3 integrates a private html5ever 0.39.0 tokenizer with bulk ASCII
+name copying and common-delimiter scanning; its released tree builder and
+exceptional-input handling remain unchanged. Decoder and normalization work,
+finalization, decoded-source destruction and temporary parser cleanup all stay
+inside parsing. Extraction algorithms and timer boundaries are unchanged.
 
 The worker and benchmark executables select `mimalloc` 0.1.48 by default
 (`libmimalloc-sys` 0.1.49 in the lockfile) and release builds use ThinLTO.
