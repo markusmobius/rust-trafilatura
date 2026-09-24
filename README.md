@@ -14,9 +14,11 @@ changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibility
 
-The compatibility target is the current Go-Trafilatura **2.2.2 development
-worktree**, based on `ed2b4c86a5727110178172cb18080efe98fdcdb2` plus the
-source-hashed changes in [testdata/go-worktree.json](testdata/go-worktree.json).
+The compatibility target is released Go-Trafilatura **2.2.2**, commit
+`f4684e100869274311107325e3b72e47cc78db20`. The independent port oracle retains
+its pre-release `ed2b4c86a5727110178172cb18080efe98fdcdb2` base plus the
+source-hashed changes in [testdata/go-worktree.json](testdata/go-worktree.json);
+these historical expectations have not been regenerated for the release.
 Go continues to track Python Trafilatura 2.2.0, commit
 `c1bc9531a2a978326112ca9987e1382745116136`, for non-fallback extraction, with
 explicit retained Go behavior. Rust matches those Go choices: complete cleaning,
@@ -166,7 +168,55 @@ not install a global allocator, so an embedding application retains control.
 Compiler profile and allocator choices are part of the benchmark identity;
 executable timings do not describe every embedding application's configuration.
 
-## Patch Qualification
+## Current Quality and Speed
+
+The [2026-09-23 benchmark JSON](https://github.com/markusmobius/content-extractor-benchmark/blob/d433ab637f0a56c0926aa3698f470794a553472f/go_rust_shared_performance_2026_09_23.json)
+is the source for these tables. All six released engines use the same 2,659
+development pages: 983 LegoNews, 181 ScrapingHub and 1,495 WCXB. The three F1
+scores use different scoring rules and must not be averaged. Errors are shown
+in that corpus order and remain in the denominators.
+
+| Implementation | LegoNews F1 | ScrapingHub F1 | WCXB F1 | Errors |
+| --- | ---: | ---: | ---: | --- |
+| go-readabilityV2-0.6.0 | 87.82711% | 95.20557% | 78.47603% | 7 / 0 / 28 |
+| rust-readability-0.6.3 | 87.82711% | 95.20557% | 78.47603% | 7 / 0 / 28 |
+| go-domdistiller-1.0.0 | 86.74080% | 92.74280% | 74.39696% | 0 / 0 / 0 |
+| rust-domdistiller-1.0.1 | 86.74080% | 92.74280% | 74.39696% | 0 / 0 / 0 |
+| go-trafilatura-2.2.2 | 90.88412% | 96.15663% | 78.49352% | 3 / 0 / 10 |
+| rust-trafilatura-2.2.4 | 90.88412% | 96.15663% | 78.49352% | 3 / 0 / 10 |
+
+| Implementation | Shared Parse ms/page | Extraction ms/page | Extraction ms/page, All Four Passes |
+| --- | ---: | ---: | ---: |
+| go-readabilityV2-0.6.0 | 5.638 | 2.669 | 2.705 |
+| rust-readability-0.6.3 | 2.525 | 2.441 | 2.451 |
+| go-domdistiller-1.0.0 | 5.638 | 3.618 | 3.628 |
+| rust-domdistiller-1.0.1 | 2.525 | 1.965 | 1.973 |
+| go-trafilatura-2.2.2 | 5.638 | 6.815 | 6.839 |
+| rust-trafilatura-2.2.4 | 2.525 | 4.000 | 4.026 |
+
+One full warmup precedes four measured passes. The first two timing columns
+use the common best two complete passes (1 and 3), an optimistic estimate;
+the final column retains the all-four mean. Go/Rust extraction ratios from
+unrounded means are **1.09x Readability, 1.84x DomDistiller and 1.70x Trafilatura**.
+Parsing is charged once per language/page, not once per engine. All-four parse
+means are Go 5.667 and Rust 2.531 ms/page.
+
+These Windows 11 / Ryzen AI 7 PRO 350 measurements use Go 1.27.1 and Rust
+1.98.1 GNU, the released Trafilatura dependency graphs, and Rust ThinLTO/mimalloc.
+Parsing includes eager decoding, normalization and DOM construction after the
+file read; extraction includes private working copies, native metadata and text
+rendering. Rust temporary trees are destroyed inside the timer; Go uses normal
+GC, which can cross stage boundaries. File I/O, startup, IPC and scoring are
+excluded. Fallbacks, comments and pagination are off; tables are on.
+
+Every repeated scored output was stable. Go/Rust Readability and DomDistiller
+match all scored outputs; Trafilatura retains two metadata-only differences.
+Separate metadata scores, exact source pins and protocol limits are in
+[UPSTREAM.md](UPSTREAM.md#released-suite-benchmark). These are shared-input
+suite timings, not standalone end-to-end latency or an isolated parser-speedup
+measurement. Older measurements below use different protocols.
+
+## Historical Patch Qualification
 
 The [paired extraction benchmark](https://github.com/markusmobius/content-extractor-benchmark/blob/5edcfd090f1590c9bbf26d7543fbdc2ab615e117/rust_shared_performance_2026_09_21.json)
 compares 2.2.2 with 2.2.3 in coordinated three-engine Rust suites on 2,659 pages.

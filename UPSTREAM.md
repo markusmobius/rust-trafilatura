@@ -1,12 +1,54 @@
 # Upstream and Port Ledger
 
+## Released Suite Benchmark
+
+The [2026-09-23 JSON](https://github.com/markusmobius/content-extractor-benchmark/blob/d433ab637f0a56c0926aa3698f470794a553472f/go_rust_shared_performance_2026_09_23.json)
+is authoritative for the current [README tables](README.md#current-quality-and-speed).
+Its SHA-256 is `24db96d7858adea1f345e7e3096e7a62bc24fa2f218a3f19f85d1fecb727e4b9`.
+Read text scores at `quality[worker][engine].evaluations[corpus].overall.f1`,
+selected timings at `overall`, and all-four timings at `all_passes`.
+
+Rust pins are Readability 0.6.3 (`52ec5ae744fb132e011ad9153ad3071e1227bdeb`),
+DomDistiller 1.0.1 (`e95bff0cea7f7b9639abe04a8531b220b3ee4a6e`) and Trafilatura
+2.2.4 (`fd57552f181c59fbb0b232250529ef68e967181b`). Go stays at Readability
+0.6.0, DomDistiller 1.0.0 and Trafilatura 2.2.2; full commits and unchanged
+dependency graphs are in the embedded build receipts. Rust-Trafilatura remains
+private; reproducing that suite requires authorized access.
+
+| Implementation | Author Sets Exact / 1,290 | Author-Unit F1 | Titles Exact / 2,364 | Dates Exact / 1,530 |
+| --- | ---: | ---: | ---: | ---: |
+| go-readabilityV2-0.6.0 | 640 | 56.38767% | 1,247 | 763 |
+| rust-readability-0.6.3 | 640 | 56.38767% | 1,247 | 763 |
+| go-domdistiller-1.0.0 | 0 | 0.00000% | 1,106 | 0 |
+| rust-domdistiller-1.0.1 | 0 | 0.00000% | 1,106 | 0 |
+| go-trafilatura-2.2.2 | 695 | 58.80923% | 1,228 | 1,227 |
+| rust-trafilatura-2.2.4 | 696 | 58.86640% | 1,227 | 1,227 |
+
+Metadata uses only nonempty supplied annotations; unannotated is not negative,
+and missing output is not filled by another engine. All six scored-output
+digests match the preceding September 22 report. Trafilatura differs between
+Go/Rust only on the title of `legonews/klaenge-des-verschweigens.de.geschichte.html`
+and the author of `legonews/golf.de-augusta.html`; extracted text matches.
+
+The full 2,659-page development run used seed 20260922, one warmup and four
+measured passes. Passes 1 and 3 were selected by combined extraction time for
+every row (5,318 observations each); all-four means retain 10,636 observations.
+Worker order is balanced per page; three-engine order is a partial six-pass
+block. Go uses `GOMAXPROCS=1`, `GOGC=100`, without forced collection. Native
+timers exclude file reads and IPC; parsing and extraction stay separate.
+The 26,590-response audit passed with no recorded sleep and AC power throughout.
+This compares released suites, not isolated parser changes or unseen holdout
+quality. It does not establish extraction-time neutrality versus older Rust.
+Historical standalone results and independent oracle fixtures below are unchanged.
+
 ## Authority
 
-The Rust behavior target is current Go-Trafilatura **2.2.2 development**:
-`ed2b4c86a5727110178172cb18080efe98fdcdb2` plus the independently exported
-worktree source hashes in [testdata/go-worktree.json](testdata/go-worktree.json).
-The saved Go commit below remains the immutable historical oracle; neither
-commit alone identifies the current dirty source tree.
+The Rust behavior target is released Go-Trafilatura **2.2.2**, commit
+`f4684e100869274311107325e3b72e47cc78db20`. The independent port oracle retains
+its pre-release `ed2b4c86a5727110178172cb18080efe98fdcdb2` base plus exported
+source hashes in [testdata/go-worktree.json](testdata/go-worktree.json).
+Those fingerprints and the saved Go commit below remain historical evidence;
+fixtures were not regenerated or relabeled as release-generated expectations.
 
 Go tracks Python Trafilatura **2.2.0**, immutable commit
 `c1bc9531a2a978326112ca9987e1382745116136`, for **non-fallback** extraction
@@ -213,7 +255,7 @@ language, default dates. The ignored local evidence is under
 It must accompany any public claim. Fallback behavior is separately checked by
 the matrices above; this corpus comparison does not qualify fallback speed.
 
-## Measured Speed
+## Historical Measured Speed
 
 The 2026-09-20 traversal build was compared with current Go and the preceding
 input-optimized Rust build in persistent processes. Each original page ran
@@ -284,8 +326,9 @@ marker indices are checked. Defensive I/O errors replace unsafe short-read
 behavior. Standalone worker processors other than Trafilatura are unsupported.
 
 Windows/GNU and WSL Linux are the local validation targets. macOS/ARM64 runtime
-execution and hosted CI are not established by local checks. Neither Go v2.2.2
-nor the Rust development crate is released by this work.
+execution and hosted CI are not established by local checks. Go v2.2.2 and
+Rust v2.2.4 are now GitHub source releases; Rust-Trafilatura remains private
+and is not published to crates.io.
 
 ## Attribution
 
