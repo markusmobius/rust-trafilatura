@@ -214,18 +214,7 @@ match all scored outputs; Trafilatura retains two metadata-only differences.
 Separate metadata scores, exact source pins and protocol limits are in
 [UPSTREAM.md](UPSTREAM.md#released-suite-benchmark). These are shared-input
 suite timings, not standalone end-to-end latency or an isolated parser-speedup
-measurement. Older measurements below use different protocols.
-
-## Historical Patch Qualification
-
-The [paired extraction benchmark](https://github.com/markusmobius/content-extractor-benchmark/blob/5edcfd090f1590c9bbf26d7543fbdc2ab615e117/rust_shared_performance_2026_09_21.json)
-compares 2.2.2 with 2.2.3 in coordinated three-engine Rust suites on 2,659 pages.
-One full warmup precedes four paired passes. File reads are untimed and parsing
-is measured separately; **Trafilatura fallback and comments are disabled**.
-Extraction takes 5.824 versus 5.838 ms/page on the same best two passes (+0.24%);
-the all-four-pass difference is +0.25%. Both pass the 5% regression gate, and
-scored text, metadata and errors match on every page. These are Windows GNU,
-Rust 1.98.1, ThinLTO/mimalloc results, not a standalone or Go/Rust speed comparison.
+measurement.
 
 ## Verification
 
@@ -261,15 +250,11 @@ The worker tool builds unmodified application source in a temporary module with
 current Go-Trafilatura substituted there, leaving the parent application intact.
 
 [tools/benchmark.py](tools/benchmark.py) compares all 983 saved pages, exact
-native outputs, snippet precision/recall/F1/accuracy and controlled extraction
-timing. Python core checks can use raw input or a separately labelled same-DOM
-diagnostic. Timing in that older tool uses preparsed DOMs and includes snippet
-scoring; it is not interchangeable with end-to-end page latency.
+native outputs and snippet precision/recall/F1/accuracy. Python core checks can
+use raw input or a separately labelled same-DOM diagnostic.
 
 The same example also supports `benchmark --jsonl --focus balanced` for the
 sibling content-extractor benchmark's paired page runner. It reads original
 files, decodes/parses, extracts and flushes one response per request. Add
 `--native-output` for complete native-output differential checks, not speed
-measurement. On the 2026-09-19 development selection, all 2,659 pages matched
-current Go's native HTML, body/comment text, full metadata and error strings.
-This is corpus evidence, not a claim of equality for every possible input.
+measurement.
