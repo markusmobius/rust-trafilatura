@@ -6,10 +6,11 @@ formatting, links/images, JSON-LD, dates, language filtering, deduplication,
 recovery and native fallback extractors. The `rustHTML` executable implements the
 Trafilatura-only contract of the existing Go worker.
 
-**Version 2.2.4** is a GitHub source release requiring Rust 1.98.1 and a native
-C toolchain. The repository remains private and requires authorized Git access.
-Dependencies use released registry packages or pinned Git tags/commits; sibling
-checkouts are not required. This crate is not published to crates.io. Release
+**Version 2.2.4** requires Rust 1.98.1 and a native C toolchain. It is available
+on [crates.io](https://crates.io/crates/rust-trafilatura/2.2.4) and as a public
+[GitHub source release](https://github.com/markusmobius/rust-trafilatura/releases/tag/v2.2.4).
+The registry package uses crates.io dependencies throughout; Git source builds
+retain pinned Git dependencies. Sibling checkouts are not required. Release
 changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibility
@@ -41,7 +42,7 @@ from complete native output comparisons. See [UPSTREAM.md](UPSTREAM.md).
 
 ```toml
 [dependencies]
-rust-trafilatura = { git = "https://github.com/markusmobius/rust-trafilatura", tag = "v2.2.4" }
+rust-trafilatura = "=2.2.4"
 ```
 
 ```rust
@@ -112,7 +113,8 @@ before extraction starts; no content is omitted or materialized lazily.
 
 ## Worker
 
-Build with `cargo build --locked --release --bin rustHTML`.
+Install from crates.io with `cargo install rust-trafilatura --version 2.2.4 --locked --bin rustHTML`,
+or build a source checkout with `cargo build --locked --release --bin rustHTML`.
 
 With no arguments, the worker writes `ready` to stdout and reads newline-ended
 requests in the form `JSON<TAB>output-path`. It writes the JSON result XORed with
@@ -150,17 +152,19 @@ the Go worker's zero-valued output contract.
 
 | Library | Version | Role |
 | --- | --- | --- |
-| rust-domdistiller | 1.0.1, pinned Git tag | Owned DOM and fallback extraction |
-| rust-htmldate | 1.10.2, pinned Git tag | Date extraction |
-| rust-dateparser | 1.4.7, pinned Git source | Indirect through HtmlDate |
-| rust-dateutil | 2.9.1, pinned Git source | Indirect through date libraries |
+| rust-domdistiller | 1.0.1 | Owned DOM and fallback extraction |
+| rust-htmldate | 1.10.2 | Date extraction |
+| rust-dateparser | 1.4.7 | Indirect through HtmlDate |
+| rust-dateutil | 2.9.1 | Indirect through date libraries |
 | rust-py3langid | 0.4.0 | Embedded native language identification |
-| rust-readability-v2 | 0.6.3, pinned Git tag | HTML parser, shared-input view and Readability fallback |
+| rust-readability-v2 | 0.6.3 | HTML parser, shared-input view and Readability fallback |
 | mimalloc | 0.1.48 | Default allocator for the worker and benchmark executables only |
 
-The selected graph is **not registry-only**. Exact source commits, versions and
-checksums are retained in [Cargo.lock](Cargo.lock). No local path dependencies
-or runtime Go/Python bridges are required.
+The crates.io distribution resolves every dependency from the registry. The Git
+source checkout retains pinned Git dependencies, with exact source commits,
+versions and checksums in [Cargo.lock](Cargo.lock). Both distributions use the
+same runtime implementation. No local path dependencies or runtime Go/Python
+bridges are required.
 
 Release executables use ThinLTO and the `mimalloc` feature by default. Build with
 `--no-default-features` to use the platform allocator. The library itself does

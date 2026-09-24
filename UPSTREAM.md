@@ -12,8 +12,8 @@ Rust pins are Readability 0.6.3 (`52ec5ae744fb132e011ad9153ad3071e1227bdeb`),
 DomDistiller 1.0.1 (`e95bff0cea7f7b9639abe04a8531b220b3ee4a6e`) and Trafilatura
 2.2.4 (`fd57552f181c59fbb0b232250529ef68e967181b`). Go stays at Readability
 0.6.0, DomDistiller 1.0.0 and Trafilatura 2.2.2; full commits and unchanged
-dependency graphs are in the embedded build receipts. Rust-Trafilatura remains
-private; reproducing that suite requires authorized access.
+dependency graphs are in the embedded build receipts. Rust-Trafilatura is now
+public; the recorded source commits remain available.
 
 | Implementation | Author Sets Exact / 1,290 | Author-Unit F1 | Titles Exact / 2,364 | Dates Exact / 1,530 |
 | --- | ---: | ---: | ---: | ---: |
@@ -88,13 +88,15 @@ the fallback algorithms.
 The port is native, accepts supplied input, and leaves scheduling to callers.
 There is no production interpreter bridge, acquisition subsystem, internal
 worker pool or model download. Development references may invoke Go and Python.
-Version 2.2.4 is a GitHub source release in the existing private repository;
-no crates.io publication or parent application upgrade is implied.
+Version 2.2.4 is available as a public GitHub source release and a crates.io
+package. Publication does not upgrade the parent application automatically.
 
-The dependency graph is **not registry-only**. [Cargo.lock](Cargo.lock) records
-exact sources and checksums. HtmlDate and Readability's required APIs are in
-the pinned Git releases. Builds require authorized access to those sources,
-not sibling worktrees. Existing released dependency archives are unchanged.
+The source checkout retains the Git pins above; [Cargo.lock](Cargo.lock) records
+its exact sources and checksums. Cargo registry packaging resolves the same
+version requirements from crates.io, so the published crate has a registry-only
+dependency graph. Both distributions contain the same runtime implementation,
+including HtmlDate's tree import and Readability's shared-input APIs. Neither
+requires private Git access or sibling worktrees. Existing tags are unchanged.
 
 The Python reference uses Python 3.12.13, lxml 6.1.3, py3langid 0.4.0,
 NumPy 2.5.2, HtmlDate 1.10.0, dateparser 1.4.2 and dateutil 2.9.0.post0.
@@ -327,8 +329,8 @@ behavior. Standalone worker processors other than Trafilatura are unsupported.
 
 Windows/GNU and WSL Linux are the local validation targets. macOS/ARM64 runtime
 execution and hosted CI are not established by local checks. Go v2.2.2 and
-Rust v2.2.4 are now GitHub source releases; Rust-Trafilatura remains private
-and is not published to crates.io.
+Rust v2.2.4 are GitHub source releases; Rust-Trafilatura 2.2.4 is also available
+on crates.io from the public repository.
 
 ## Attribution
 

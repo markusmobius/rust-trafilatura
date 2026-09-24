@@ -6,7 +6,8 @@ rust-version = "1.98.1"
 description = "Native Rust port of Go-Trafilatura's HTML extraction pipeline"
 repository = "https://github.com/markusmobius/rust-trafilatura"
 license = "Apache-2.0 AND BSD-3-Clause"
-publish = false
+publish = ["crates-io"]
+exclude = ["tools/__pycache__/**"]
 
 [features]
 default = ["mimalloc"]

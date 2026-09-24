@@ -1,5 +1,12 @@
 # Changelog
 
+## crates.io Publication - 2026-09-23
+
+- Publish `rust-trafilatura` 2.2.4 from the now-public repository. The registry
+  archive uses crates.io dependencies throughout and excludes Python caches.
+- Keep runtime sources, dependency versions, release tags and benchmark results
+  unchanged. Git source builds retain their existing pinned dependencies.
+
 ## Documentation - 2026-09-23
 
 - Refresh README quality and six-engine speed comparisons from the published
@@ -25,6 +32,6 @@
   prior released suite on all 2,659 development pages, with matching benchmark
   outputs for all three engines. Existing Go/Python expectations are unchanged.
 
-This is a GitHub source release. The repository remains private, and no crate
-is published to crates.io. Parsing gains do not imply that each extraction
-stage becomes faster; the coordinated suite is measured separately.
+Version 2.2.4 is available as both a public GitHub source release and a crates.io
+package. Parsing gains do not imply that each extraction stage becomes faster;
+the coordinated suite is measured separately.
