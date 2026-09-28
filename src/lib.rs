@@ -18,6 +18,9 @@ pub mod main_extractor;
 pub mod metadata;
 mod metadata_json;
 mod options;
+#[cfg(feature = "lab-profile")]
+mod profile;
+mod readability_lxml;
 mod regex_go;
 pub mod selector;
 mod settings;
@@ -32,7 +35,8 @@ pub use core::{extract_document, extract_node, Error, ExtractResult};
 pub use input::extract;
 pub use metadata::Metadata;
 pub use options::{
-    Config, DateOptions, ExtractionFocus, FallbackCandidates, HtmlDateMode, Options, Tree,
+    Config, DateOptions, ExtractionFocus, FallbackCandidates, HtmlDateMode, Options,
+    ReadabilityFallback, Tree,
 };
 pub use rust_domdistiller::dom::{Attribute, Document, Kind, Node, NodeId};
 pub use rust_htmldate;
@@ -232,7 +236,11 @@ pub(crate) fn from_readability(parsed: rust_readability::Document) -> Document {
 mod html_tests {
     #[test]
     fn shared_input_is_independent_of_extractor_order() {
-        let html = format!("<html lang='en'><head><title>Shared article</title></head><body><article><h1>Shared article</h1><p>{}</p></article></body></html>", "A substantial article sentence, with additional context and detailed evidence. ".repeat(30));
+        let html = format!(
+            "<html lang='en'><head><title>Shared article</title></head><body><article><h1>Shared article</h1><p>{}</p></article></body></html>",
+            "A substantial article sentence, with additional context and detailed evidence. "
+                .repeat(30)
+        );
         let document = super::parse_shared_bytes(html.as_bytes()).unwrap();
         let snapshot = document.clone();
         let options = super::Options {

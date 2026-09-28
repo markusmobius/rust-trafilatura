@@ -287,6 +287,7 @@ fn process(command: &str) -> io::Result<Vec<u8>> {
         include_images: true,
         include_links: true,
         enable_fallback: true,
+        readability_fallback: rust_trafilatura::ReadabilityFallback::ReadabilityLxml,
         ..Default::default()
     };
     if let Ok(result) = rust_trafilatura::extract_document(&parse_html(&source), &options) {
@@ -467,6 +468,18 @@ mod tests {
             .as_str()
             .unwrap()
             .starts_with("<body>"));
+    }
+
+    #[test]
+    fn worker_keeps_short_article_instead_of_legal_footer() {
+        let article = "The community library will open a new reading room next month. Residents reviewed the plans at a public meeting, and the council approved the funding. ".repeat(3);
+        let footer = "This site provides general information and cannot guarantee that every statement is complete. Readers should seek independent advice and review all terms before making decisions. ".repeat(12);
+        let html = format!("<html><head><title>Library reading room</title></head><body><main><h1>Library reading room</h1><p>{article}</p></main><div class='footer'><h2>How this site works</h2><p>{footer}</p></div></body></html>");
+        let command = json!({"HTML": html, "URL": "https://example.com/library", "RunTrafilatura": true, "Verbose": true}).to_string();
+        let result: Value = serde_json::from_slice(&process(&command).unwrap()).unwrap();
+        let text = result["Trafilatura"]["Processed"]["Text"].as_str().unwrap();
+        assert!(text.contains("community library"));
+        assert!(!text.contains("independent advice"));
     }
 
     #[test]

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.2.5 - 2026-09-28
+
+- Add native `ReadabilityFallback::ReadabilityLxml`, following Python
+  Trafilatura 2.2.0's bundled readability-lxml without a Python runtime.
+- Preserve the library's default Mozilla mode and explicit caller candidates.
+  Candidate ordering, acceptance, DomDistiller preparation and cleanup remain
+  unchanged. The packaged Trafilatura-only `rustHTML` worker explicitly selects
+  Lxml; applications should not reuse incompatible standalone candidates.
+- Retain lazy fallback-input preparation and pin Readability 0.6.4 for prepared
+  retry reuse and exact cached score updates. Optional `lab-profile` diagnostics
+  compile out of normal builds. No result cache or concurrency is introduced.
+- Match all 6,541 exact-input Python candidate trees. The corrected Go/Rust
+  application lab matches complete outputs on all 6,554 pages, with 4.29%
+  external fallback versus Python's 3.36%; these are selection, not error rates.
+- Keep existing Go reference assertions and add the short-article/legal-footer
+  worker regression. DomDistiller is still not jusText; full Python parity and
+  a 2x speedup are not claimed. Fresh annotated quality and performance results
+  are recorded in the [shared benchmark](https://github.com/markusmobius/content-extractor-benchmark).
+
 ## crates.io Publication - 2026-09-23
 
 - Publish `rust-trafilatura` 2.2.4 from the now-public repository. The registry

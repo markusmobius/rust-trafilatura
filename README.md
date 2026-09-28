@@ -6,9 +6,9 @@ formatting, links/images, JSON-LD, dates, language filtering, deduplication,
 recovery and native fallback extractors. The `rustHTML` executable implements the
 Trafilatura-only contract of the existing Go worker.
 
-**Version 2.2.4** requires Rust 1.98.1 and a native C toolchain. It is available
-on [crates.io](https://crates.io/crates/rust-trafilatura/2.2.4) and as a public
-[GitHub source release](https://github.com/markusmobius/rust-trafilatura/releases/tag/v2.2.4).
+**Version 2.2.5** requires Rust 1.98.1 and a native C toolchain. It is available
+on [crates.io](https://crates.io/crates/rust-trafilatura/2.2.5) and as a public
+[GitHub source release](https://github.com/markusmobius/rust-trafilatura/releases/tag/v2.2.5).
 The registry package uses crates.io dependencies throughout; Git source builds
 retain pinned Git dependencies. Sibling checkouts are not required. Release
 changes are recorded in [CHANGELOG.md](CHANGELOG.md).
@@ -26,9 +26,11 @@ explicit retained Go behavior. Rust matches those Go choices: complete cleaning,
 final-body recovery measurement, automatic language metadata and normalized
 metadata selector IDs/classes. Python fixtures remain independent and unchanged.
 
-Fallbacks retain Go-Trafilatura's ReadabilityV2 0.6.0, DomDistiller, custom
-candidates, ordering, acceptance, lazy stopping, sanitization and recall rescue.
-They do not use jusText or Python's bundled Readability. The saved Go reference
+Fallbacks retain Mozilla-compatible Readability, DomDistiller, custom candidates,
+ordering, acceptance, lazy stopping, sanitization and recall rescue. Version
+2.2.5 adds explicit `ReadabilityFallback::ReadabilityLxml`, a native port of
+Python's bundled Readability; the library default remains Mozilla. DomDistiller
+is not jusText. The saved Go reference
 is `72dce36bfe95502563533cf68a9050370a3d7081`; it identifies the historical
 helper/fallback oracle, not the current extraction target.
 
@@ -42,7 +44,7 @@ from complete native output comparisons. See [UPSTREAM.md](UPSTREAM.md).
 
 ```toml
 [dependencies]
-rust-trafilatura = "=2.2.4"
+rust-trafilatura = "=2.2.5"
 ```
 
 ```rust
@@ -90,6 +92,14 @@ images and links are off by default; comments and tables are on. `Config`
 retains Go's thresholds. An explicit date configuration takes priority over the
 date mode, and a date override bypasses extraction.
 
+For Lxml candidates set `enable_fallback: true` and
+`readability_fallback: ReadabilityFallback::ReadabilityLxml`, leaving
+`fallback_candidates` unset so Trafilatura prepares its own input. The Apache-2.0
+port follows Python Trafilatura 2.2.0's bundled readability-lxml, including Arc90,
+starrhorne/iterationlabs and gfxmonk/python-readability ancestry. Readability 0.6.4
+also reuses prepared retries and exact cached scores. See [CHANGELOG.md](CHANGELOG.md);
+optional `lab-profile` diagnostics are compiled out normally.
+
 The owned DOM is re-exported from Rust-DomDistiller. Prefer `parse_html` for the
 current parser; `Document::parse` is the dependency's older parser. Direct arena
 edits require valid acyclic indices and consistent parent/child relationships.
@@ -113,7 +123,7 @@ before extraction starts; no content is omitted or materialized lazily.
 
 ## Worker
 
-Install from crates.io with `cargo install rust-trafilatura --version 2.2.4 --locked --bin rustHTML`,
+Install from crates.io with `cargo install rust-trafilatura --version 2.2.5 --locked --bin rustHTML`,
 or build a source checkout with `cargo build --locked --release --bin rustHTML`.
 
 With no arguments, the worker writes `ready` to stdout and reads newline-ended
@@ -141,6 +151,7 @@ in Go; it does not use the library reader's normalization. Extraction enables
 fallbacks, images, links and tables, excludes comments, and returns Go's five
 outer response sections. Only `Trafilatura` is populated. `Verbose` controls raw
 HTML; processed text retains formatting/link/image markers and ordered URLs.
+The worker selects the native Lxml fallback in 2.2.5; the library default is unchanged.
 
 Standalone `RunReadability`, `RunDistiller`, `RunMeta` and `RunDate` are explicitly
 unsupported. They return a file-protocol error or terminate the TCP request with
@@ -157,7 +168,7 @@ the Go worker's zero-valued output contract.
 | rust-dateparser | 1.4.7 | Indirect through HtmlDate |
 | rust-dateutil | 2.9.1 | Indirect through date libraries |
 | rust-py3langid | 0.4.0 | Embedded native language identification |
-| rust-readability-v2 | 0.6.3 | HTML parser, shared-input view and Readability fallback |
+| rust-readability-v2 | 0.6.4 | HTML parser, shared-input view and Readability fallback |
 | mimalloc | 0.1.48 | Default allocator for the worker and benchmark executables only |
 
 The crates.io distribution resolves every dependency from the registry. The Git

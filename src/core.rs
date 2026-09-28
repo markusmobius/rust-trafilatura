@@ -86,10 +86,19 @@ pub fn extract_node(
     if root >= document.nodes.len() {
         return Err(Error::MissingDocument);
     }
-    extract_tree(copy_tree(document, root), options)
+    #[cfg(feature = "lab-profile")]
+    let mut profile = crate::profile::Profile::new();
+    let tree = copy_tree(document, root);
+    #[cfg(feature = "lab-profile")]
+    profile.mark("traf/input-copy");
+    extract_tree(tree, options)
 }
 
 pub(crate) fn extract_tree(mut tree: Tree, options: &Options) -> Result<ExtractResult, Error> {
+    #[cfg(feature = "lab-profile")]
+    let mut profile = crate::profile::Profile::new();
+    #[cfg(feature = "lab-profile")]
+    let mut fallback_trace = crate::profile::FallbackTrace::new();
     let mut options = options.clone();
     let config = options.config.get_or_insert_default().clone();
     let mut cache = Cache::new(config.cache_size);
@@ -98,7 +107,11 @@ pub(crate) fn extract_tree(mut tree: Tree, options: &Options) -> Result<ExtractR
     {
         return Err(Error::HtmlLanguage(options.target_language));
     }
+    #[cfg(feature = "lab-profile")]
+    profile.mark("traf/options");
     let mut metadata = crate::metadata::extract_metadata(&tree.document, &options);
+    #[cfg(feature = "lab-profile")]
+    profile.mark("traf/metadata");
     if options.has_essential_metadata {
         if metadata.title.is_empty() {
             return Err(Error::RequiredTitle);
@@ -119,6 +132,8 @@ pub(crate) fn extract_tree(mut tree: Tree, options: &Options) -> Result<ExtractR
         }
     }
     let mut sequence = extraction_sequence(&mut tree.document, tree.root, &mut cache, &options);
+    #[cfg(feature = "lab-profile")]
+    profile.mark("traf/sequence");
     let body = &mut sequence.content;
     if options.max_tree_size > 0
         && etree::children(&body.document, body.root).len() as i64 > options.max_tree_size
@@ -152,6 +167,8 @@ pub(crate) fn extract_tree(mut tree: Tree, options: &Options) -> Result<ExtractR
         return Err(Error::DuplicateBody);
     }
     let language = language_classifier(&sequence.content_text, &sequence.comments_text);
+    #[cfg(feature = "lab-profile")]
+    profile.mark("traf/language-and-validation");
     if !options.target_language.is_empty() && language != options.target_language {
         return Err(Error::WrongLanguage {
             wanted: options.target_language,
@@ -169,6 +186,10 @@ pub(crate) fn extract_tree(mut tree: Tree, options: &Options) -> Result<ExtractR
         .as_ref()
         .map(|body| baseline::plain_text(&body.document, Some(body.root)))
         .unwrap_or_default();
+    #[cfg(feature = "lab-profile")]
+    profile.mark("traf/output");
+    #[cfg(feature = "lab-profile")]
+    fallback_trace.returned();
     Ok(ExtractResult {
         content_node: sequence.content,
         comments_node: sequence.comments,
@@ -276,6 +297,8 @@ fn prepare_tree(document: &Document, root: NodeId, options: &Options) -> Tree {
 }
 
 fn recall_retry(mut retry: Tree, options: &Options) -> ((Tree, String), Option<(Tree, String)>) {
+    #[cfg(feature = "lab-profile")]
+    let _trace = crate::profile::RecallTrace::new();
     let rescue_options = options;
     let options = Options {
         focus: ExtractionFocus::FavorRecall,
@@ -294,6 +317,8 @@ fn recall_retry(mut retry: Tree, options: &Options) -> ((Tree, String), Option<(
     let (body, content) =
         main_extractor::extract_content(&mut cleaned.document, cleaned.root, &mut cache, &options);
     cleaned.root = body;
+    #[cfg(feature = "lab-profile")]
+    crate::profile::fallback_event("native_extracted", "");
     if let Some(original) = original {
         let (body, content) = external::compare_external_extraction(
             &original.document,
@@ -317,6 +342,8 @@ pub(crate) fn extraction_sequence(
     cache: &mut Cache,
     options: &Options,
 ) -> Sequence {
+    #[cfg(feature = "lab-profile")]
+    let mut profile = crate::profile::Profile::new();
     let is_forum = forum_thread_page(document, root);
     if options.exclude_comments && (options.focus == ExtractionFocus::FavorPrecision || !is_forum) {
         root = html_processing::prune_unwanted_nodes(
@@ -349,9 +376,15 @@ pub(crate) fn extraction_sequence(
             false,
         );
     }
+    #[cfg(feature = "lab-profile")]
+    profile.mark("sequence/prepare");
     let (body, mut content) =
         main_extractor::extract_content(&mut cleaned.document, cleaned.root, cache, options);
     cleaned.root = body;
+    #[cfg(feature = "lab-profile")]
+    crate::profile::fallback_event("native_extracted", "");
+    #[cfg(feature = "lab-profile")]
+    profile.mark("sequence/main");
     if options.enable_fallback {
         (cleaned.root, content) = external::compare_external_extraction(
             document,
@@ -361,6 +394,8 @@ pub(crate) fn extraction_sequence(
             options,
         );
     }
+    #[cfg(feature = "lab-profile")]
+    profile.mark("sequence/fallback");
     let mut length = content.chars().count();
     let min_size = options
         .config
@@ -374,7 +409,11 @@ pub(crate) fn extraction_sequence(
         cleaned = baseline;
         length = content.chars().count();
         forum_posts = None;
+        #[cfg(feature = "lab-profile")]
+        crate::profile::fallback_event("baseline_selected", "");
     }
+    #[cfg(feature = "lab-profile")]
+    profile.mark("sequence/baseline");
     if options.focus == ExtractionFocus::Balanced
         && length > 0
         && length < 3000
@@ -402,11 +441,17 @@ pub(crate) fn extraction_sequence(
         if distiller_length > retry_length && distiller_length > 2 * length {
             (cleaned, content) = distiller.unwrap();
             forum_posts = None;
+            #[cfg(feature = "lab-profile")]
+            crate::profile::fallback_event("distiller_rescue_selected", "distiller");
         } else if retry_length as i64 >= min_size && retry_length as f64 > 1.5 * length as f64 {
             (cleaned, content) = (retry_body, retry_text);
             forum_posts = None;
+            #[cfg(feature = "lab-profile")]
+            crate::profile::fallback_event("recall_selected", "");
         }
     }
+    #[cfg(feature = "lab-profile")]
+    profile.mark("sequence/recall");
     if let Some(posts) = forum_posts {
         let existing: Vec<_> = etree::children(&cleaned.document, cleaned.root)
             .iter()
@@ -424,6 +469,8 @@ pub(crate) fn extraction_sequence(
         }
         if changed {
             content = etree::extraction_text(&cleaned.document, cleaned.root);
+            #[cfg(feature = "lab-profile")]
+            crate::profile::fallback_event("forum_appended", "");
         }
     }
     Sequence {

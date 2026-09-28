@@ -7,6 +7,13 @@ pub enum ExtractionFocus {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ReadabilityFallback {
+    #[default]
+    Mozilla,
+    ReadabilityLxml,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum HtmlDateMode {
     #[default]
     Default,
@@ -56,6 +63,7 @@ pub struct Options {
     pub target_language: String,
     pub enable_fallback: bool,
     pub fallback_candidates: Option<FallbackCandidates>,
+    pub readability_fallback: ReadabilityFallback,
     pub focus: ExtractionFocus,
     pub exclude_comments: bool,
     pub exclude_tables: bool,
