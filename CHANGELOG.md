@@ -17,8 +17,21 @@
   historical Go and Python references and all 1,152 fallback matrix inputs.
 - Validate 55 active library tests, five worker tests, documentation and strict
   all-target/all-feature Clippy on Windows/GNU Rust 1.98.1, with both allocators.
-  Fresh quality, timing and fallback-selection rates will be linked from the
-  [shared benchmark](https://github.com/markusmobius/content-extractor-benchmark).
+  The final optional-corpus run passes all 57 library tests, including 6,541
+  lxml candidates and 1,793 HTML cases; public crate source/checksum audit passes.
+- Keep all 6,554 standalone Mozilla outputs unchanged in each language; 129
+  corrected FAST bodies now match Python FAST exactly. Full FAST Go/Rust
+  outputs agree on every input, with the separate date-enabled caveat in UPSTREAM.
+- Measure final external fallback at **0% FAST** and **202/6,554 (3.082%)
+  non-FAST**, solely bundled lxml. Recall/baseline are separate; 21 failures
+  stay in the denominator. Non-FAST library probes are never deployed.
+- Publish [fresh 2,659-page results](https://github.com/markusmobius/content-extractor-benchmark/blob/49c426d6135df81b7d492bea7e6aec8e6d77d80c/README.md#results-2026-09-29):
+  FAST F1 90.91534% / 96.15663% / 78.51703%, non-FAST 91.13924% / 95.98168% /
+  79.56922% (LegoNews / ScrapingHub / WCXB). Go/Rust extraction is 11.329 / 6.570
+  ms/page FAST and 24.745 / 10.910 non-FAST, all four passes retained. These are
+  within-run language comparisons, not old/new speedups. Non-FAST WCXB F1 is
+  lower and LegoNews has one extra rejection versus the older configuration.
+  Fresh docs are post-publication updates; the 2.2.6 crate and tag are unchanged.
 
 ## 2.2.5 - 2026-09-28
 

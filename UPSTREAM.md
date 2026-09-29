@@ -2,6 +2,44 @@
 
 ## Released Suite Benchmark
 
+The [2026-09-29 FAST report](https://github.com/markusmobius/content-extractor-benchmark/blob/49c426d6135df81b7d492bea7e6aec8e6d77d80c/go_rust_shared_performance_2026_09_29.json)
+and [non-FAST lxml report](https://github.com/markusmobius/content-extractor-benchmark/blob/49c426d6135df81b7d492bea7e6aec8e6d77d80c/go_rust_lxml_performance_2026_09_29.json)
+are authoritative for the current [README tables](README.md#current-quality-and-speed).
+Their published LF-byte SHA-256 values are respectively
+`382f869ae8f91c493c2c623c90a42a574f711ea584aead27387e907f3a24c523` and
+`688616f464d1a63b666f31df010ddad652c753ce8cee5996f8e954b4d20509b2`.
+The suites use Trafilatura 2.2.6, Readability 0.6.0 / 0.6.5 and independent
+DomDistiller 1.0.0 / 1.0.1; full source and dependency identities are retained.
+Standalone Readability is Mozilla, not Trafilatura's bundled lxml fallback.
+
+Each mode uses all 2,659 development inputs, one warmup and four measured passes
+(seed 20260929), with 26,590 audited responses, AC power and no sleep events.
+Parsing includes the conditional isolated noscript tree; extraction includes
+working copies, metadata and rendering. No fastest-pass selection, pooled
+cross-mode timing, old/new speed claim or unseen holdout claim is made.
+Text scores match Go/Rust; the two title/author differences are field-replayed.
+
+The separate [release validation](https://github.com/markusmobius/content-extractor-benchmark/blob/49c426d6135df81b7d492bea7e6aec8e6d77d80c/release_validation_2026_09_29.json)
+(SHA-256 `f428f7372f7e22c124d7eb708a195ec0100a11be0a542334b7dd9b73598bf81a`)
+records **0/6,554 (0%)** external fallback in production FAST and
+**202/6,554 (3.082%)** final bundled-lxml outputs in each non-FAST library probe.
+Recall and baseline are separate; 21 no-results remain in the denominator.
+All plain/diagnostic outputs and non-FAST Go/Rust output/source labels match.
+Rust directly traces zero FAST external events; both source settings are false
+and all complete FAST worker outputs match. Standalone Mozilla is unchanged on
+all 6,554 inputs; 129 corrected FAST bodies now match Python FAST exactly.
+Dates are off; 18 preexisting Go date-enabled failures are excluded, not fixed.
+Neither agreement nor selection rates establish accuracy or full Python parity.
+
+The published 2.2.6 crate has SHA-256
+`b76bce941c9ac3c876455a92d7982af5d2aca7b493dbdbf1898714a84acc74e4`.
+Its 29 Rust source files equal clean release commit
+`8c002162bb2ba9b2703e13144bfafb2cb35c3452`. The immutable crate retains its
+release-time README; these fresh measurements update repository documentation
+and GitHub release notes without moving the tag or republishing the archive.
+
+## Historical Suite Benchmark: 2026-09-23
+
 The [2026-09-23 JSON](https://github.com/markusmobius/content-extractor-benchmark/blob/d433ab637f0a56c0926aa3698f470794a553472f/go_rust_shared_performance_2026_09_23.json)
 records a historical suite, not current 2.2.6 behavior. The
 [README tables](README.md#current-quality-and-speed) identify their measured versions.
