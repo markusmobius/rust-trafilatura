@@ -1,5 +1,14 @@
 # Upstream and Port Ledger
 
+## Documentation Release 2.2.7
+
+This patch packages the simplified library README, candidate-removal rationale,
+aligned benchmark presentation and [AGENTS.md](AGENTS.md). Runtime source and
+dependency pins remain those of 2.2.6, including Readability 0.6.5 and
+DomDistiller 1.0.1. The benchmark retains its measured 2.2.6 labels; this is not
+a new extraction benchmark or a claim of changed speed/quality. The earlier
+crate's immutable README is not replaced; 2.2.7 carries the current docs.
+
 ## Released Suite Benchmark
 
 The [2026-09-29 FAST report](https://github.com/markusmobius/content-extractor-benchmark/blob/49c426d6135df81b7d492bea7e6aec8e6d77d80c/go_rust_shared_performance_2026_09_29.json)
@@ -92,6 +101,76 @@ The 26,590-response audit passed with no recorded sleep and AC power throughout.
 This compares released suites, not isolated parser changes or unseen holdout
 quality. It does not establish extraction-time neutrality versus older Rust.
 Historical standalone results and independent oracle fixtures below are unchanged.
+
+## Protocol Worker
+
+The packaged `rustHTML` executable is a Trafilatura-only protocol adapter, not
+the separate multi-extractor application in newsprinceton-gopython.
+
+With no arguments, it writes `ready` to stdout and reads newline-ended requests
+as `JSON<TAB>output-path`. It writes the JSON result XORed with 255 to that file
+and reports `ok` or `error`. It handles successive requests; an invalid
+tab-delimited line ends the loop.
+
+With `port parent-id readiness-guid`, it connects to localhost, sends readiness
+and exchanges framed JSON messages. Each frame starts with two big-endian
+32-bit integers: payload length and chunk size. Response chunks are 1 MiB.
+Input envelopes use `GUID` and `Command`; replies use `MType`, `GUID` and
+`Content`. Fields are case-insensitive, and omitted/null envelope fields retain
+their previous values. Partial reads/writes and clean disconnects are handled;
+truncated frames return an I/O error.
+
+Example payload:
+
+```json
+{"HTML":"<article><p>Article text.</p></article>","URL":"https://example.org/","RunTrafilatura":true,"Verbose":true}
+```
+
+`HTMLPath` takes precedence over `HTML`. A file beginning with `||XOR||` has its
+remaining bytes XOR-decoded with 255. Input is parsed directly without the
+library reader's normalization. Extraction enables images, links and tables,
+disables external fallback, excludes comments and returns Go's five outer
+response sections, populating only `Trafilatura`. `Verbose` controls raw HTML;
+processed text retains formatting/link/image markers and ordered URLs.
+The adapter always uses FAST with scripting-disabled input and extensive dates.
+Native recall and baseline remain.
+
+`RunReadability`, `RunDistiller`, `RunMeta` and `RunDate` are unsupported: they
+return a file-protocol error or terminate the TCP request with an error.
+Malformed JSON, unreadable files, invalid URLs and extraction rejections
+otherwise retain the zero-valued output contract.
+
+## Why Supplied Candidates Were Removed
+
+The controlled Go 2.2.2 comparison kept the library version and 6,554 inputs
+fixed while changing how fallback candidates were obtained:
+
+| Final External Source | Generated Internally | Supplied Standalone Result |
+| --- | ---: | ---: |
+| Mozilla Readability | 776 | 794 |
+| DomDistiller | 4 | 1,614 |
+| Total | 780 (11.90%) | 2,408 (36.74%) |
+
+Trafilatura prepared the input before internal DomDistiller extraction, while
+supplied results came from the original page. In three MoneySavingExpert forum
+cases, a 1,380-character legal footer replaced article content; candidates from
+prepared input were only 188-262 characters and were rejected. Sanitizing the
+supplied output afterward did not fix those cases. Removing only internal input
+cleaning reproduced all supplied results in a 16-page control. DomDistiller's
+own cleanup was present in both paths.
+
+Algorithm choice is a separate effect: supplying Python's bundled Readability
+candidate to the otherwise unchanged pipeline lowered fallback to 275/6,554
+(4.20%), whereas a retry-threshold-only change reached 733/6,554 (11.18%).
+Mozilla Readability is not bundled readability-lxml, and DomDistiller is not
+Python's jusText. The current 202/6,554 (3.08%) reflects the complete lxml-only
+policy, not candidate removal alone. All rates count final returned content,
+not temporary acceptance or accuracy.
+
+The [historical validation](https://github.com/markusmobius/content-extractor-benchmark/blob/97c0f3f67261c275ceb2ab532ee05992dbce8cc7/release_validation_2026_09_28.json)
+retains the supplied-policy baseline and the subsequent corrected policy;
+the controlled investigation is recorded in the application lab's
+`Rust/lab/RESULTS.md`, section `Go v2.2.2 and Local Correction`.
 
 ## Authority
 

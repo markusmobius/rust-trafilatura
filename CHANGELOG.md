@@ -1,37 +1,37 @@
 # Changelog
 
+## 2.2.7 - 2026-09-29
+
+- Documentation-only release; runtime source and dependency pins are unchanged
+  from 2.2.6.
+- Align the README with Go-Trafilatura's library-first structure and explain the
+  measured reason for removing supplied fallback candidates.
+- Use the same September 29 six-engine comparison and measurement conventions
+  as the other five library READMEs.
+- Include AGENTS.md with instructions for keeping README, UPSTREAM, CHANGELOG,
+  release notes and crate documentation consistent.
+- Package the revised documentation on crates.io. Benchmark rows retain the
+  versions actually measured; this release introduces no new measurements.
+
 ## 2.2.6 - 2026-09-29
 
-- Permit only internally generated bundled readability-lxml when fallback is
-  enabled. Remove Mozilla, DomDistiller and supplied/custom fallback execution,
-  including `external::distiller_rescue`. Native recall and baseline remain.
-- Keep legacy candidate fields and enum variants source-compatible but ignored;
-  the default selector is now `ReadabilityLxml`. Fallback remains off by default.
-- Add `parse_html_with_scripting` and `parse_shared_html_with_scripting`, backed
-  by published Readability 0.6.5. Reader extraction opts out of scripting so
-  noscript markup is parsed as children. Existing shared-parser defaults and
-  standalone Mozilla extraction/image recovery are unchanged.
-- Make the packaged rustHTML worker permanently FAST, with extensive date
-  extraction retained. No standalone candidates are accepted by Trafilatura.
-- Refresh the independent current-Go extraction/fallback oracle while preserving
-  historical Go and Python references and all 1,152 fallback matrix inputs.
-- Validate 55 active library tests, five worker tests, documentation and strict
-  all-target/all-feature Clippy on Windows/GNU Rust 1.98.1, with both allocators.
-  The final optional-corpus run passes all 57 library tests, including 6,541
-  lxml candidates and 1,793 HTML cases; public crate source/checksum audit passes.
-- Keep all 6,554 standalone Mozilla outputs unchanged in each language; 129
-  corrected FAST bodies now match Python FAST exactly. Full FAST Go/Rust
-  outputs agree on every input, with the separate date-enabled caveat in UPSTREAM.
-- Measure final external fallback at **0% FAST** and **202/6,554 (3.082%)
-  non-FAST**, solely bundled lxml. Recall/baseline are separate; 21 failures
-  stay in the denominator. Non-FAST library probes are never deployed.
-- Publish [fresh 2,659-page results](https://github.com/markusmobius/content-extractor-benchmark/blob/49c426d6135df81b7d492bea7e6aec8e6d77d80c/README.md#results-2026-09-29):
-  FAST F1 90.91534% / 96.15663% / 78.51703%, non-FAST 91.13924% / 95.98168% /
-  79.56922% (LegoNews / ScrapingHub / WCXB). Go/Rust extraction is 11.329 / 6.570
-  ms/page FAST and 24.745 / 10.910 non-FAST, all four passes retained. These are
-  within-run language comparisons, not old/new speedups. Non-FAST WCXB F1 is
-  lower and LegoNews has one extra rejection versus the older configuration.
-  Fresh docs are post-publication updates; the 2.2.6 crate and tag are unchanged.
+- Remove caller-supplied fallback candidates. Candidates extracted before
+  Trafilatura's input cleanup can retain long boilerplate, such as legal footers,
+  that passes fallback length checks and replaces the article.
+- In a controlled Go 2.2.2 comparison on 6,554 saved pages, supplying candidates
+  raised final external fallback from **780 pages (11.90%)** to **2,408 pages
+  (36.74%)**. Most of the increase came from DomDistiller: **4 to 1,614 pages**.
+  This motivates generating fallback candidates inside Trafilatura instead.
+- When fallback is enabled, use only internally generated bundled
+  readability-lxml. Mozilla-style Readability is a different algorithm, and
+  DomDistiller is not Python's jusText. The complete 2.2.6 policy selects external
+  fallback on **202/6,554 pages (3.08%)**; this is not a candidate-removal-only
+  comparison or an accuracy score. FAST has no external fallback. Native recall
+  and baseline recovery remain. Legacy candidate fields and selector variants
+  are retained for source compatibility but ignored.
+- Parse noscript contents as HTML children in reader extraction. Add explicit
+  scripting-mode parser APIs using Readability 0.6.5; existing parser defaults
+  remain unchanged. See [UPSTREAM.md](UPSTREAM.md) for verification details.
 
 ## 2.2.5 - 2026-09-28
 
@@ -39,8 +39,8 @@
   Trafilatura 2.2.0's bundled readability-lxml without a Python runtime.
 - Preserve the library's default Mozilla mode and explicit caller candidates.
   Candidate ordering, acceptance, DomDistiller preparation and cleanup remain
-  unchanged. The packaged Trafilatura-only `rustHTML` worker explicitly selects
-  Lxml; applications should not reuse incompatible standalone candidates.
+  unchanged. Applications can select Lxml explicitly and should not reuse
+  incompatible standalone candidates.
 - Retain lazy fallback-input preparation and pin Readability 0.6.4 for prepared
   retry reuse and exact cached score updates. Optional `lab-profile` diagnostics
   compile out of normal builds. No result cache or concurrency is introduced.
@@ -79,7 +79,7 @@
 - Keep DOM construction, compaction and parser cleanup inside parsing; no
   lazy work, omitted content, output caching or internal parallelism is added.
 - Preserve public APIs, shared-input independence across all six extraction
-  orders, and the existing `rustHTML` worker protocol.
+  orders, and the existing executable protocol.
 - Independently compare complete decoded sources and DOM values against the
   prior released suite on all 2,659 development pages, with matching benchmark
   outputs for all three engines. Existing Go/Python expectations are unchanged.
