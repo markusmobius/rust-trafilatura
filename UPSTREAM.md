@@ -38,6 +38,19 @@ Its 29 Rust source files equal clean release commit
 release-time README; these fresh measurements update repository documentation
 and GitHub release notes without moving the tag or republishing the archive.
 
+### Standalone Worker Correction
+
+The [follow-up worker record](https://github.com/markusmobius/content-extractor-benchmark/blob/d5e8c6402430b4e8a36ff364df991ba74e3ace67/worker_correction_2026_09_29.json)
+has published LF-byte SHA-256
+`07fd4f3f4a9b8b12f9980d2f1c5560152c176064f70e12f4df70191677585340`.
+The earlier application build mistakenly disabled standalone DomDistiller;
+this was not part of the fallback policy. Both corrected workers honor
+RunDistiller, SkipPagination and Verbose. All 6,554 standalone results equal
+their pre-removal native workers; all other sections are unchanged and complete
+Go/Rust outputs match. Five protocol tests pass on Windows/Linux amd64 against
+rebuilt deployments. Earlier receipts remain historical. Library code, crate
+archives, tags, annotated benchmark results and fallback rates are unchanged.
+
 ## Historical Suite Benchmark: 2026-09-23
 
 The [2026-09-23 JSON](https://github.com/markusmobius/content-extractor-benchmark/blob/d433ab637f0a56c0926aa3698f470794a553472f/go_rust_shared_performance_2026_09_23.json)
