@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.8 - 2026-09-29
+
+- Documentation-only release of `rust-trafilatura`; runtime source and
+  dependency pins are unchanged from 2.2.7.
+- Apply the approved nine-section README format, covering supplied HTML,
+  upstream fidelity, native performance, runnable usage and actual options.
+- Require named creator acknowledgments in AGENTS.md and explicitly credit
+  Adrien Barbaresi, Markus Mobius, Arc90, starrhorne, iterationlabs, gfxmonk,
+  the Go Authors and Radhi Fadlillah for their respective contributions.
+- Keep optional fallback evidence in this package's Options section and use
+  full package names. Benchmark versions and reports remain unchanged; no new run.
+
 ## 2.2.7 - 2026-09-29
 
 - Documentation-only release; runtime source and dependency pins are unchanged

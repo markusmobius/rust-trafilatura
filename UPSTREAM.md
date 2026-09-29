@@ -1,5 +1,14 @@
 # Upstream and Port Ledger
 
+## Documentation Release 2.2.8
+
+`rust-trafilatura` 2.2.8 packages the approved nine-section README and the full
+format, philosophy and creator-credit requirements in [AGENTS.md](AGENTS.md).
+Credits explicitly retain Adrien Barbaresi and the inherited port authors.
+Runtime source and dependencies are unchanged from 2.2.7; only documentation,
+the root package version and its descriptive metadata change. Measured 2.2.6
+results and their immutable reports are not relabeled or rerun.
+
 ## Documentation Release 2.2.7
 
 This patch packages the simplified library README, candidate-removal rationale,
