@@ -151,6 +151,13 @@ Before finalizing README changes:
 	Obtain approval before redesigning it; passing checks or previous release
 	authorization is not approval of a new README design.
 
+README.md is included as crate-level Rust documentation. Even for README-only
+changes, run `cargo clippy --locked --all-targets -- -D warnings` as well as
+formatting and doctests before pushing or publishing. Passing doctests does not
+check Clippy's Markdown lints. Use three spaces for numbered-list continuation
+lines and two for bullet-list continuation lines, not tabs; do not suppress the
+documentation lints to make CI pass.
+
 ## Six-Repository Benchmark Contract
 
 Follow the complete
