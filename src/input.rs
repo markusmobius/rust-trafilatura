@@ -1,4 +1,6 @@
-use crate::{core::extract_tree, encoding, parse_html, Error, ExtractResult, Options, Tree};
+use crate::{
+    core::extract_tree, encoding, parse_html_with_scripting, Error, ExtractResult, Options, Tree,
+};
 use std::io::Read;
 
 pub fn extract(mut reader: impl Read, options: &Options) -> Result<ExtractResult, Error> {
@@ -19,6 +21,6 @@ pub fn extract(mut reader: impl Read, options: &Options) -> Result<ExtractResult
     } else {
         encoding::decode_as(&input, &options.input_encoding)
     };
-    let document = parse_html(&source);
+    let document = parse_html_with_scripting(&source, false);
     extract_tree(Tree { document, root: 0 }, options)
 }

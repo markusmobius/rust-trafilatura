@@ -116,6 +116,7 @@ struct WorktreeFixture {
     content: Vec<ContentCase>,
     sequences: Vec<ContentCase>,
     extraction: Vec<ExtractionCase>,
+    native_fallbacks: Vec<NativeFallbackCase>,
 }
 
 fn worktree_fixture() -> WorktreeFixture {
@@ -216,8 +217,6 @@ struct NativeFallbackCase {
     variant: usize,
     output: String,
     text: String,
-    rescued: String,
-    rescued_text: String,
 }
 
 #[derive(Deserialize)]
@@ -1696,15 +1695,39 @@ fn pinned_go_fallback_selection_and_sanitization() {
 }
 
 #[test]
-fn pinned_go_native_fallbacks() {
-    let reference = fixture();
+fn current_go_native_fallbacks() {
+    let reference = worktree_fixture();
     assert_eq!(reference.native_fallbacks.len(), 1152);
+    let historical = fixture().native_fallbacks;
+    assert_eq!(historical.len(), reference.native_fallbacks.len());
     let focuses = [
         crate::ExtractionFocus::Balanced,
         crate::ExtractionFocus::FavorRecall,
         crate::ExtractionFocus::FavorPrecision,
     ];
-    for (index, case) in reference.native_fallbacks.into_iter().enumerate() {
+    for (index, (case, original_case)) in reference
+        .native_fallbacks
+        .into_iter()
+        .zip(historical)
+        .enumerate()
+    {
+        assert_eq!(
+            (
+                &case.html,
+                &case.extracted,
+                case.focus,
+                case.flags,
+                case.variant
+            ),
+            (
+                &original_case.html,
+                &original_case.extracted,
+                original_case.focus,
+                original_case.flags,
+                original_case.variant
+            ),
+            "historical input changed at {index}"
+        );
         let original = crate::parse_html(&case.html);
         let before = original.clone();
         let mut extracted = crate::parse_html(&case.extracted);
@@ -1747,20 +1770,6 @@ fn pinned_go_native_fallbacks() {
             "fallback output {index}"
         );
         assert_eq!(content, case.text, "fallback text {index}");
-        let rescued = crate::external::distiller_rescue(&original, 0, &options);
-        assert_eq!(
-            rescued
-                .as_ref()
-                .map(|(body, _)| body.document.outer_html(body.root))
-                .unwrap_or_default(),
-            case.rescued,
-            "rescue output {index}"
-        );
-        assert_eq!(
-            rescued.map(|(_, content)| content).unwrap_or_default(),
-            case.rescued_text,
-            "rescue text {index}"
-        );
         assert_eq!(original, before, "fallback original {index}");
         if let Some(before) = candidates_before {
             let after = options.fallback_candidates.unwrap();

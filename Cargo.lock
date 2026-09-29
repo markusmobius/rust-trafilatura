@@ -942,8 +942,8 @@ dependencies = [
 
 [[package]]
 name = "rust-readability-v2"
-version = "0.6.4"
-source = "git+https://github.com/markusmobius/rust-readability?tag=v0.6.4#79d5b8ac6bfe54a79270a887ea11464ca9aed5d5"
+version = "0.6.5"
+source = "git+https://github.com/markusmobius/rust-readability?tag=v0.6.5#fb314e7b3f9a363c9852c3dda200f391ef2f98f0"
 dependencies = [
  "aho-corasick",
  "chrono",
@@ -969,7 +969,7 @@ dependencies = [
 
 [[package]]
 name = "rust-trafilatura"
-version = "2.2.5"
+version = "2.2.6"
 dependencies = [
  "chrono",
  "encoding_rs",

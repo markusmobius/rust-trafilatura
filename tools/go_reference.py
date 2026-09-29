@@ -62,14 +62,17 @@ def main():
             incoming.extractall(source, filter="data")
         if arguments.worktree:
             source = arguments.go_source.resolve()
-        for name, expected in MODULE_HASHES.items():
-            actual = hashlib.sha256((source / name).read_bytes()).hexdigest()
-            if actual != expected:
-                raise ValueError(f"Pinned {name} checksum mismatch: {actual}")
+        if not arguments.worktree:
+            for name, expected in MODULE_HASHES.items():
+                actual = hashlib.sha256((source / name).read_bytes()).hexdigest()
+                if actual != expected:
+                    raise ValueError(f"Pinned {name} checksum mismatch: {actual}")
         run([arguments.go, "mod", "verify"], cwd=source, env=environment)
         result = run([arguments.go, "list", "-mod=readonly", "-m", "-json", "all"], cwd=source, env=environment, capture_output=True, text=True)
         modules = modules_from_json(result.stdout)
         for name, version in REQUIRED_VERSIONS.items():
+            if arguments.worktree and name == "github.com/markusmobius/go-readabilityV2":
+                continue
             if modules.get(name) != version:
                 raise ValueError(f"Unexpected reference dependency: {name} {modules.get(name)}")
         graph = temporary / "modules.json"
@@ -83,8 +86,16 @@ def main():
         shutil.copytree(graphemes_directory, graphemes_source, ignore=shutil.ignore_patterns("*_test.go"))
         emoji_directory = Path(run([arguments.go, "list", "-mod=readonly", "-f", "{{.Dir}}", "github.com/forPelevin/gomoji"], cwd=source, env=environment, capture_output=True, text=True).stdout.strip())
         css_directory = Path(run([arguments.go, "list", "-mod=readonly", "-f", "{{.Dir}}", "github.com/andybalholm/cascadia"], cwd=source, env=environment, capture_output=True, text=True).stdout.strip())
+        exporter = ROOT / "tools/go-reference/export_test.go"
+        if arguments.worktree:
+            exported = exporter.read_text(encoding="utf-8")
+            rescue = "rescued, rescuedText := distillerRescue(document, options)"
+            if exported.count(rescue) != 1:
+                raise ValueError("Expected exactly one historical DomDistiller rescue export")
+            exporter = temporary / "export_test.go"
+            exporter.write_text(exported.replace(rescue, 'var rescued *html.Node; rescuedText := ""'), encoding="utf-8")
         overlay.write_text(json.dumps({"Replace": {
-            str(source / "z_rust_reference_test.go"): str(ROOT / "tools/go-reference/export_test.go"),
+            str(source / "z_rust_reference_test.go"): str(exporter),
             str(cases_source / "cases/z_rust_reference_test.go"): str(ROOT / "tools/go-cases/export_test.go"),
             str(graphemes_source / "z_rust_reference_test.go"): str(ROOT / "tools/go-graphemes/export_test.go"),
         }}), encoding="utf-8")
@@ -100,7 +111,8 @@ def main():
         run([arguments.go, "test", "-mod=readonly", "-count=1", "-overlay", str(overlay), "-run", "^TestRustExportReference$", "-v", "."], cwd=source, env=environment)
         if arguments.worktree:
             reference = json.loads(fixture.read_bytes())
-            selected = {name: reference[name] for name in ("handlers", "content", "sequences", "extraction")}
+            selected = {name: reference[name] for name in ("handlers", "content", "sequences", "extraction", "native_fallbacks")}
+            selected["modules"] = modules
             files = sorted(source.glob("**/*.go")) + [source / "go.mod", source / "go.sum"]
             selected["identity"] = {"kind": "current-go-worktree-cross-port", "head": run([arguments.git, "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
                                     "source_sha256": {path.relative_to(source).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in files}}

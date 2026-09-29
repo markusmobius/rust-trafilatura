@@ -1,8 +1,4 @@
-use crate::{
-    baseline, etree, html_processing, settings, text, Document, ExtractionFocus, Kind, NodeId,
-    Options, ReadabilityFallback, Tree,
-};
-use std::borrow::Cow;
+use crate::{etree, html_processing, settings, text, Document, ExtractionFocus, NodeId, Options};
 
 const TAGS_TO_SANITIZE: &[&str] = &[
     "aside",
@@ -119,106 +115,6 @@ pub fn sanitize_tree(document: &mut Document, root: NodeId, options: &Options) {
     etree::strip_tags(document, root, &invalid);
 }
 
-fn to_readability(document: &Document, root: NodeId) -> rust_readability::Document {
-    let mut output = rust_readability::Document { nodes: Vec::new() };
-    let mut pending = vec![(root, None)];
-    while let Some((original, parent)) = pending.pop() {
-        let source = &document.nodes[original];
-        let index = output.nodes.len();
-        let mut node = rust_readability::Node::new(match source.kind {
-            Kind::Document => rust_readability::Kind::Document,
-            Kind::Element => rust_readability::Kind::Element,
-            Kind::Text => rust_readability::Kind::Text,
-            Kind::Comment => rust_readability::Kind::Comment,
-            Kind::Doctype => rust_readability::Kind::Doctype,
-        });
-        node.tag = source.tag.as_str().into();
-        node.data = source.data.as_str().into();
-        node.attrs = source
-            .attrs
-            .iter()
-            .map(|attribute| rust_readability::Attribute {
-                namespace: attribute.namespace.as_str().into(),
-                key: attribute.key.as_str().into(),
-                value: attribute.value.as_str().into(),
-            })
-            .collect();
-        node.parent = parent;
-        output.nodes.push(node);
-        if let Some(parent) = parent {
-            output.nodes[parent].children.push(index);
-        }
-        pending.extend(
-            source
-                .children
-                .iter()
-                .rev()
-                .map(|&child| (child, Some(index))),
-        );
-    }
-    output
-}
-
-fn readability_candidate(document: &Document, root: NodeId, options: &Options) -> Option<Tree> {
-    #[cfg(feature = "lab-profile")]
-    crate::profile::fallback_event("extractor_run", "readability");
-    if options.readability_fallback == ReadabilityFallback::ReadabilityLxml {
-        return Some(crate::readability_lxml::extract(document, root));
-    }
-    let document = to_readability(document, root);
-    let result = rust_readability::from_document(&document, options.original_url.as_ref()).ok()?;
-    Some(Tree {
-        root: result.node?,
-        document: crate::from_readability(result.document.document),
-    })
-}
-
-pub fn distiller_rescue(
-    document: &Document,
-    root: NodeId,
-    options: &Options,
-) -> Option<(Tree, String)> {
-    #[cfg(feature = "lab-profile")]
-    crate::profile::fallback_event("distiller_rescue_started", "distiller");
-    let mut body = if let Some(candidate) = options
-        .fallback_candidates
-        .as_ref()
-        .and_then(|candidates| candidates.distiller.as_ref())
-    {
-        let mut document = Document { nodes: Vec::new() };
-        let root = etree::import_tree(&mut document, &candidate.document, candidate.root);
-        Tree { document, root }
-    } else {
-        let mut cleaned = Document { nodes: Vec::new() };
-        let root = etree::import_tree(&mut cleaned, document, root);
-        baseline::basic_cleaning(&mut cleaned, root);
-        let options = rust_domdistiller::Options {
-            original_url: options.original_url.as_ref().map(ToString::to_string),
-            skip_pagination: true,
-            ..Default::default()
-        };
-        #[cfg(feature = "lab-profile")]
-        crate::profile::fallback_event("extractor_run", "distiller");
-        let result = rust_domdistiller::apply_to_node(&cleaned, root, &options).ok()?;
-        Tree {
-            document: result.node,
-            root: 0,
-        }
-    };
-    sanitize_tree(&mut body.document, body.root, options);
-    let content = text::trim(&etree::iter_text(&body.document, body.root, " "));
-    #[cfg(feature = "lab-profile")]
-    crate::profile::fallback_candidate(
-        "distiller_rescue_returned",
-        "distiller",
-        options
-            .fallback_candidates
-            .as_ref()
-            .is_some_and(|candidates| candidates.distiller.is_some()),
-    );
-    Some((body, content))
-}
-
 pub fn compare_external_extraction(
     original: &Document,
     original_root: NodeId,
@@ -229,7 +125,7 @@ pub fn compare_external_extraction(
     #[cfg(feature = "lab-profile")]
     crate::profile::fallback_event("comparison_started", "");
     let extracted_text = text::trim(&etree::iter_text(extracted, extracted_root, " "));
-    let mut len_extracted = extracted_text.chars().count();
+    let len_extracted = extracted_text.chars().count();
     let min_size = options
         .config
         .clone()
@@ -240,97 +136,39 @@ pub fn compare_external_extraction(
     {
         return (extracted_root, extracted_text);
     }
-    let prepared = std::cell::OnceCell::new();
-    let prepare = || {
-        prepared.get_or_init(|| {
-            let mut document = Document { nodes: Vec::new() };
-            let mut root = etree::import_tree(&mut document, original, original_root);
-            etree::strip_elements(&mut document, root, true, &["fencedframe"]);
-            if options.focus == ExtractionFocus::FavorPrecision {
-                root = html_processing::prune_unwanted_nodes(
-                    &mut document,
-                    root,
-                    crate::selector::FALLBACK_DISCARDED,
-                    false,
-                );
-            }
-            Tree { document, root }
-        })
-    };
-    let candidates = options.fallback_candidates.as_ref();
-    let count_custom = candidates.map_or(0, |candidates| candidates.others.len());
-    let mut used_fallback = false;
-    for index in 0..count_custom + 2 {
-        let candidate = if index < count_custom {
-            Some(Cow::Borrowed(&candidates.unwrap().others[index]))
-        } else if index == count_custom {
-            if let Some(candidate) =
-                candidates.and_then(|candidates| candidates.readability.as_ref())
-            {
-                Some(Cow::Borrowed(candidate))
-            } else {
-                let cleaned = prepare();
-                readability_candidate(&cleaned.document, cleaned.root, options).map(Cow::Owned)
-            }
-        } else if let Some(candidate) =
-            candidates.and_then(|candidates| candidates.distiller.as_ref())
-        {
-            Some(Cow::Borrowed(candidate))
-        } else {
-            let cleaned = prepare();
-            distiller_rescue(&cleaned.document, cleaned.root, options)
-                .map(|(body, _)| Cow::Owned(body))
-        };
-        let Some(candidate) = candidate else { continue };
-        #[cfg(feature = "lab-profile")]
-        crate::profile::fallback_candidate(
-            "candidate_considered",
-            if index < count_custom {
-                "custom"
-            } else if index == count_custom {
-                "readability"
-            } else {
-                "distiller"
-            },
-            matches!(&candidate, Cow::Borrowed(_)),
+    let mut prepared = Document { nodes: Vec::new() };
+    let mut root = etree::import_tree(&mut prepared, original, original_root);
+    etree::strip_elements(&mut prepared, root, true, &["fencedframe"]);
+    if options.focus == ExtractionFocus::FavorPrecision {
+        root = html_processing::prune_unwanted_nodes(
+            &mut prepared,
+            root,
+            crate::selector::FALLBACK_DISCARDED,
+            false,
         );
-        let candidate_text =
-            text::trim(&etree::iter_text(&candidate.document, candidate.root, " "));
-        let len_candidate = candidate_text.chars().count();
-        if candidate_is_usable(
-            &candidate.document,
-            candidate.root,
-            extracted,
-            extracted_root,
-            len_candidate,
-            len_extracted,
-            options,
-        ) {
-            let title = if index < count_custom {
-                "custom"
-            } else if index == count_custom {
-                "readability"
-            } else {
-                "distiller"
-            };
-            options.log(format_args!(
-                "candidate {title} is usable ({len_candidate} characters)"
-            ));
-            extracted_root = etree::import_tree(extracted, &candidate.document, candidate.root);
-            len_extracted = len_candidate;
-            used_fallback = true;
-            #[cfg(feature = "lab-profile")]
-            crate::profile::fallback_candidate(
-                "candidate_selected",
-                title,
-                matches!(&candidate, Cow::Borrowed(_)),
-            );
-        }
-        if len_extracted as i64 >= min_size {
-            break;
-        }
     }
-    if used_fallback {
+    #[cfg(feature = "lab-profile")]
+    crate::profile::fallback_event("extractor_run", "readability");
+    let candidate = crate::readability_lxml::extract(&prepared, root);
+    #[cfg(feature = "lab-profile")]
+    crate::profile::fallback_candidate("candidate_considered", "readability", false);
+    let candidate_text = text::trim(&etree::iter_text(&candidate.document, candidate.root, " "));
+    let len_candidate = candidate_text.chars().count();
+    if candidate_is_usable(
+        &candidate.document,
+        candidate.root,
+        extracted,
+        extracted_root,
+        len_candidate,
+        len_extracted,
+        options,
+    ) {
+        options.log(format_args!(
+            "candidate readability-lxml is usable ({len_candidate} characters)"
+        ));
+        extracted_root = etree::import_tree(extracted, &candidate.document, candidate.root);
+        #[cfg(feature = "lab-profile")]
+        crate::profile::fallback_candidate("candidate_selected", "readability", false);
         sanitize_tree(extracted, extracted_root, options)
     }
     (
@@ -344,9 +182,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn explicit_supplied_candidates_remain_supported() {
+    fn supplied_candidates_cannot_override_internal_lxml() {
         let input = crate::parse_html("<html><body></body></html>");
-        let candidate = Tree {
+        let candidate = crate::Tree {
             document: crate::parse_html(&format!(
                 "<article><p>{}</p></article>",
                 "Explicit candidate content with supporting details. ".repeat(20)
@@ -366,7 +204,10 @@ mod tests {
             };
             let mut output = crate::parse_html("<body></body>");
             let (_, content) = compare_external_extraction(&input, 0, &mut output, 0, &options);
-            assert!(content.contains("Explicit candidate content"), "{kind}");
+            assert!(
+                content.is_empty(),
+                "legacy {kind} candidate was used: {content}"
+            );
         }
     }
 }

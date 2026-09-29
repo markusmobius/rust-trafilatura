@@ -8,8 +8,9 @@ pub enum ExtractionFocus {
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ReadabilityFallback {
-    #[default]
+    /// Legacy value; ignored. The only fallback is readability-lxml.
     Mozilla,
+    #[default]
     ReadabilityLxml,
 }
 
@@ -61,8 +62,11 @@ pub struct Options {
     pub original_url: Option<crate::Url>,
     pub input_encoding: String,
     pub target_language: String,
+    /// Compare with bundled readability-lxml. False selects FAST with native recovery only.
     pub enable_fallback: bool,
+    /// Legacy field; ignored. Fallback candidates are generated internally.
     pub fallback_candidates: Option<FallbackCandidates>,
+    /// Legacy field; ignored. The only fallback is readability-lxml.
     pub readability_fallback: ReadabilityFallback,
     pub focus: ExtractionFocus,
     pub exclude_comments: bool,

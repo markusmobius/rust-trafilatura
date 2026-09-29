@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.2.6 - 2026-09-29
+
+- Permit only internally generated bundled readability-lxml when fallback is
+  enabled. Remove Mozilla, DomDistiller and supplied/custom fallback execution,
+  including `external::distiller_rescue`. Native recall and baseline remain.
+- Keep legacy candidate fields and enum variants source-compatible but ignored;
+  the default selector is now `ReadabilityLxml`. Fallback remains off by default.
+- Add `parse_html_with_scripting` and `parse_shared_html_with_scripting`, backed
+  by published Readability 0.6.5. Reader extraction opts out of scripting so
+  noscript markup is parsed as children. Existing shared-parser defaults and
+  standalone Mozilla extraction/image recovery are unchanged.
+- Make the packaged rustHTML worker permanently FAST, with extensive date
+  extraction retained. No standalone candidates are accepted by Trafilatura.
+- Refresh the independent current-Go extraction/fallback oracle while preserving
+  historical Go and Python references and all 1,152 fallback matrix inputs.
+- Validate 55 active library tests, five worker tests, documentation and strict
+  all-target/all-feature Clippy on Windows/GNU Rust 1.98.1, with both allocators.
+  Fresh quality, timing and fallback-selection rates will be linked from the
+  [shared benchmark](https://github.com/markusmobius/content-extractor-benchmark).
+
 ## 2.2.5 - 2026-09-28
 
 - Add native `ReadabilityFallback::ReadabilityLxml`, following Python

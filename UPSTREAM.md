@@ -3,7 +3,8 @@
 ## Released Suite Benchmark
 
 The [2026-09-23 JSON](https://github.com/markusmobius/content-extractor-benchmark/blob/d433ab637f0a56c0926aa3698f470794a553472f/go_rust_shared_performance_2026_09_23.json)
-is authoritative for the current [README tables](README.md#current-quality-and-speed).
+records a historical suite, not current 2.2.6 behavior. The
+[README tables](README.md#current-quality-and-speed) identify their measured versions.
 Its published-file SHA-256 (LF line endings) is `7d7be9839f1652606cb91850af5134b188f2508be25623df889372dab4a06cc6`.
 Read text scores at `quality[worker][engine].evaluations[corpus].overall.f1`,
 selected timings at `overall`, and all-four timings at `all_passes`.
@@ -43,12 +44,12 @@ Historical standalone results and independent oracle fixtures below are unchange
 
 ## Authority
 
-The Rust behavior target is released Go-Trafilatura **2.2.2**, commit
-`f4684e100869274311107325e3b72e47cc78db20`. The independent port oracle retains
-its pre-release `ed2b4c86a5727110178172cb18080efe98fdcdb2` base plus exported
-source hashes in [testdata/go-worktree.json](testdata/go-worktree.json).
-Those fingerprints and the saved Go commit below remain historical evidence;
-fixtures were not regenerated or relabeled as release-generated expectations.
+The Rust behavior target is Go-Trafilatura **2.2.6**. The current independent
+oracle in [testdata/go-worktree.json](testdata/go-worktree.json) records the
+exported source hashes and module graph. Its extraction and native fallback
+outputs were regenerated from Go for the lxml-only policy. All 1,152 fallback
+matrix inputs are checked against the unchanged historical fixture; Python
+and frozen-Go fixtures are not rewritten to match Rust.
 
 Go tracks Python Trafilatura **2.2.0**, immutable commit
 `c1bc9531a2a978326112ca9987e1382745116136`, for **non-fallback** extraction
@@ -57,18 +58,18 @@ not a newly regenerated Python expectation. Python comparisons use `fast=True`,
 native fallbacks disabled and formatting enabled. Repairs are general algorithm
 changes, not filename, phrase or benchmark exceptions.
 
-The **Go fallback pipeline is retained**: ReadabilityV2 0.6.0, DomDistiller,
-custom candidates, ordering, lazy stopping, acceptance, sanitization and recall
-rescue. No jusText or Python bundled-Readability port is substituted. Changes to
-the shared main extractor can change fallback-enabled results without changing
-the fallback algorithms.
+The **only external fallback is bundled readability-lxml**, generated from
+Trafilatura's prepared input. Mozilla, DomDistiller and supplied/custom candidates
+are ignored; the old DomDistiller recall rescue is removed. Native recall and
+baseline recovery remain. Python's jusText recovery is not implemented.
+Standalone Mozilla Readability is independent and unchanged.
 
 ## Pins
 
 | Component | Pin |
 | --- | --- |
 | Saved Go-Trafilatura | `72dce36bfe95502563533cf68a9050370a3d7081` |
-| Current Go extraction oracle SHA-256 | `28e45fd8fa76c497f3ab969576dcb134306e03c3535cb6b978f77ffe9493be6e` |
+| Current Go extraction oracle | Source identities in `testdata/go-worktree.json` |
 | Go toolchain / Unicode | 1.27.1 / 17.0.0 |
 | Go-HtmlDate | 1.10.1, `e4137245789a42de79c4c6ed8029b2cf1255f27c` |
 | Go-DateParser | 1.4.7, `1554533a164fdcab763e59bd42fe46c86bb98a74` |
@@ -78,7 +79,7 @@ the fallback algorithms.
 | Go-DomDistiller | `25b8d046ffb4053bf68345d6fa59bc9ae1961ad8` |
 | Go HTML parser | `golang.org/x/net v0.59.0` |
 | Rust toolchain | 1.98.1, edition 2021 |
-| Rust-Readability | 0.6.3, Git `52ec5ae744fb132e011ad9153ad3071e1227bdeb` |
+| Rust-Readability | 0.6.5, Git tag `v0.6.5`; exact commit in `Cargo.lock` |
 | Rust-DomDistiller | 1.0.1, Git `e95bff0cea7f7b9639abe04a8531b220b3ee4a6e` |
 | Rust-Py3langid | Registry `rust-py3langid =0.4.0` |
 | Rust-HtmlDate | 1.10.2, Git `912ede5196710f23214bb5a831437c35ed5ff5b6` |
@@ -88,7 +89,7 @@ the fallback algorithms.
 The port is native, accepts supplied input, and leaves scheduling to callers.
 There is no production interpreter bridge, acquisition subsystem, internal
 worker pool or model download. Development references may invoke Go and Python.
-Version 2.2.4 is available as a public GitHub source release and a crates.io
+Version 2.2.6 is available as a public GitHub source release and a crates.io
 package. Publication does not upgrade the parent application automatically.
 
 The source checkout retains the Git pins above; [Cargo.lock](Cargo.lock) records
@@ -113,7 +114,7 @@ dependencies are newer; date differences require separate attribution.
 	Python core behavior. The generator verifies installed source against the
 	immutable archive and its dependency pins. Go consumes the identical file.
 3. [testdata/go-worktree.json](testdata/go-worktree.json): current Go handlers,
-	content/comments, sequences and extraction after shared core repairs. Its
+	content/comments, sequences, extraction and current native fallback selection. Its
 	`current-go-worktree-cross-port` identity includes recursive source hashes.
 	It is not evidence of Python correctness on its own.
 
@@ -140,7 +141,7 @@ The library implements reader decoding/gzip, owned DOM extraction, metadata,
 OpenGraph/JSON-LD, dates, language filtering, CSS pruning, per-call deduplication,
 main content/comments, lists, quotes, code, images, tables, baseline recovery,
 recall escalation and native fallbacks. See [README.md](README.md) for APIs.
-Caller trees and custom candidates are preserved. Date/fallback adapters import
+Caller trees are preserved; deprecated custom candidates are ignored. Date adapters import
 nodes without serializing a caller tree into another parser. The embedded
 language model initializes lazily.
 
@@ -181,7 +182,7 @@ conversion uses owned attributes and direct string copies. Selectors traverse in
 order and stop early only for first-match queries. Metadata can borrow already
 normalized class strings and read author candidates without cloning the page.
 Ordered cleaning collects matching tags once and rechecks reachability before
-each tag's removals. Native fallbacks and language/date work are not bypassed.
+each tag's removals. Language/date work is not bypassed. FAST bypasses the optional lxml comparison.
 
 The 2.2.4 shared parser writes directly into the final DomDistiller document
 arena and compacts reachable nodes into preorder while moving the matching
@@ -200,6 +201,15 @@ pool, cross-request result cache or runtime bridge is used. Temporary profiling
 hooks are absent from production source.
 
 ## Verification Scope
+
+Trafilatura reader extraction and the packaged FAST worker use scripting-disabled
+HTML parsing, which makes noscript markup real child nodes. Existing
+`parse_html` and shared-parser entry points remain scripting-enabled; explicit
+`*_with_scripting` functions let document callers select Trafilatura's mode.
+Standalone Mozilla must retain its default tree for noscript image recovery.
+The owned DOM still comes from Rust-DomDistiller, but extraction does not call
+that engine. The Readability dependency supplies parsing and shared-input APIs,
+not a fallback implementation.
 
 [src/upstream_tests.rs](src/upstream_tests.rs) includes these matrices. Counts
 are input/option combinations, not unique pages or independent defects.

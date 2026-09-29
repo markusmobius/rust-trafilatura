@@ -296,10 +296,9 @@ fn prepare_tree(document: &Document, root: NodeId, options: &Options) -> Tree {
     cleaned
 }
 
-fn recall_retry(mut retry: Tree, options: &Options) -> ((Tree, String), Option<(Tree, String)>) {
+fn recall_retry(mut retry: Tree, options: &Options) -> (Tree, String) {
     #[cfg(feature = "lab-profile")]
     let _trace = crate::profile::RecallTrace::new();
-    let rescue_options = options;
     let options = Options {
         focus: ExtractionFocus::FavorRecall,
         ..options.clone()
@@ -328,11 +327,9 @@ fn recall_retry(mut retry: Tree, options: &Options) -> ((Tree, String), Option<(
             &options,
         );
         cleaned.root = body;
-        let distiller =
-            external::distiller_rescue(&original.document, original.root, rescue_options);
-        ((cleaned, content), distiller)
+        (cleaned, content)
     } else {
-        ((cleaned, content), None)
+        (cleaned, content)
     }
 }
 
@@ -433,17 +430,9 @@ pub(crate) fn extraction_sequence(
                 false,
             )
         }
-        let ((retry_body, retry_text), distiller) = recall_retry(retry, options);
+        let (retry_body, retry_text) = recall_retry(retry, options);
         let retry_length = retry_text.chars().count();
-        let distiller_length = distiller
-            .as_ref()
-            .map_or(0, |(_, content)| content.chars().count());
-        if distiller_length > retry_length && distiller_length > 2 * length {
-            (cleaned, content) = distiller.unwrap();
-            forum_posts = None;
-            #[cfg(feature = "lab-profile")]
-            crate::profile::fallback_event("distiller_rescue_selected", "distiller");
-        } else if retry_length as i64 >= min_size && retry_length as f64 > 1.5 * length as f64 {
+        if retry_length as i64 >= min_size && retry_length as f64 > 1.5 * length as f64 {
             (cleaned, content) = (retry_body, retry_text);
             forum_posts = None;
             #[cfg(feature = "lab-profile")]
@@ -486,7 +475,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn recall_retry_preserves_caller_rescue_focus() {
+    fn recall_retry_ignores_supplied_candidates() {
         let document = crate::parse_html(&format!(
             "<article><p>{}</p><p>Second paragraph.</p></article>",
             "Article sentence with enough content. ".repeat(20)
@@ -513,18 +502,15 @@ mod tests {
                     }),
                     ..Default::default()
                 };
-                let expected = enable_fallback
-                    .then(|| external::distiller_rescue(&document, 0, &options))
-                    .flatten();
-                let ((_, _), actual) = recall_retry(copy_tree(&document, 0), &options);
-                let rendered = |candidate: Option<(Tree, String)>| {
-                    candidate.map(|(tree, text)| (tree.document.outer_html(tree.root), text))
-                };
-                assert_eq!(
-                    rendered(actual),
-                    rendered(expected),
-                    "{focus:?}, fallback {enable_fallback}"
+                let expected = recall_retry(
+                    copy_tree(&document, 0),
+                    &Options {
+                        fallback_candidates: None,
+                        ..options.clone()
+                    },
                 );
+                let actual = recall_retry(copy_tree(&document, 0), &options);
+                assert_eq!(actual, expected, "{focus:?}, fallback {enable_fallback}");
             }
         }
     }

@@ -42,7 +42,9 @@ pub use rust_domdistiller::dom::{Attribute, Document, Kind, Node, NodeId};
 pub use rust_htmldate;
 pub use rust_readability;
 pub use rust_readability::Url;
-pub use shared::{parse_shared_bytes, parse_shared_html, SharedDocument};
+pub use shared::{
+    parse_shared_bytes, parse_shared_html, parse_shared_html_with_scripting, SharedDocument,
+};
 
 pub const GO_REFERENCE_COMMIT: &str = "72dce36bfe95502563533cf68a9050370a3d7081";
 
@@ -54,12 +56,22 @@ pub fn extract_shared_document(
 }
 
 pub fn parse_html(source: &str) -> Document {
+    parse_html_with_scripting(source, true)
+}
+
+pub fn parse_html_with_scripting(source: &str, scripting_enabled: bool) -> Document {
     let mut output = HtmlOutput(Document { nodes: Vec::new() });
     let root = match source.strip_prefix('\u{feff}') {
-        Some(remainder) => {
-            rust_readability::parse_html_direct(&format!("&#xfeff;{remainder}"), &mut output)
-        }
-        None => rust_readability::parse_html_direct(source, &mut output),
+        Some(remainder) => rust_readability::parse_html_direct_with_scripting(
+            &format!("&#xfeff;{remainder}"),
+            &mut output,
+            scripting_enabled,
+        ),
+        None => rust_readability::parse_html_direct_with_scripting(
+            source,
+            &mut output,
+            scripting_enabled,
+        ),
     };
     output.into_document(root)
 }
@@ -208,6 +220,7 @@ impl rust_readability::HtmlTreeStore for HtmlOutput {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn from_readability(parsed: rust_readability::Document) -> Document {
     Document {
         nodes: parsed

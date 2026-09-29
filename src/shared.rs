@@ -24,11 +24,16 @@ pub fn parse_shared_bytes(source: &[u8]) -> Result<SharedDocument, crate::Error>
 }
 
 pub fn parse_shared_html(source: &str) -> SharedDocument {
+    parse_shared_html_with_scripting(source, true)
+}
+
+pub fn parse_shared_html_with_scripting(source: &str, scripting_enabled: bool) -> SharedDocument {
     let mut output = SharedOutput {
         tree: crate::HtmlOutput(Document { nodes: Vec::new() }),
         namespaces: Vec::new(),
     };
-    let root = rust_readability::parse_html_direct(source, &mut output);
+    let root =
+        rust_readability::parse_html_direct_with_scripting(source, &mut output, scripting_enabled);
     let mut namespaces = Vec::with_capacity(output.namespaces.len());
     let document = output.tree.into_document_with(root, |original| {
         namespaces.push(std::mem::take(&mut output.namespaces[original]));
@@ -190,6 +195,36 @@ impl DomSource for SharedDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn trafilatura_reader_uses_separate_noscript_mode() {
+        let source = format!(
+            "<html><head><title>Article</title></head><body><article><p>{}</p><noscript><p>Hidden placeholder markup.</p><img src='/image.jpg'></noscript></article></body></html>",
+            "A substantive article sentence, with sufficient detail for content extraction. ".repeat(12)
+        );
+        let original = parse_shared_html(&source);
+        let disabled = parse_shared_html_with_scripting(&source, false);
+        assert_eq!(original, parse_shared_html_with_scripting(&source, true));
+        assert_eq!(
+            original.copy_for_readability(),
+            rust_readability::parse_dom(&source)
+        );
+        assert!(original
+            .document
+            .nodes
+            .iter()
+            .any(|node| node.kind == Kind::Text && node.data.contains("<img")));
+        assert!(disabled.document.nodes.iter().any(|node| node.tag == "img"));
+        let options = crate::Options {
+            enable_fallback: false,
+            ..Default::default()
+        };
+        let reader = crate::extract(source.as_bytes(), &options).unwrap();
+        let document = crate::extract_document(disabled.document(), &options).unwrap();
+        assert_eq!(reader.content_text, document.content_text);
+        assert!(!reader.content_text.contains("Hidden placeholder"));
+        assert!(!reader.content_text.contains("<img"));
+    }
 
     fn reference_shared_html(source: &str) -> SharedDocument {
         let mut output = SharedDocument {

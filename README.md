@@ -6,31 +6,30 @@ formatting, links/images, JSON-LD, dates, language filtering, deduplication,
 recovery and native fallback extractors. The `rustHTML` executable implements the
 Trafilatura-only contract of the existing Go worker.
 
-**Version 2.2.5** requires Rust 1.98.1 and a native C toolchain. It is available
-on [crates.io](https://crates.io/crates/rust-trafilatura/2.2.5) and as a public
-[GitHub source release](https://github.com/markusmobius/rust-trafilatura/releases/tag/v2.2.5).
+**Version 2.2.6** requires Rust 1.98.1 and a native C toolchain. It is available
+on [crates.io](https://crates.io/crates/rust-trafilatura/2.2.6) and as a public
+[GitHub source release](https://github.com/markusmobius/rust-trafilatura/releases/tag/v2.2.6).
 The registry package uses crates.io dependencies throughout; Git source builds
 retain pinned Git dependencies. Sibling checkouts are not required. Release
 changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibility
 
-The compatibility target is released Go-Trafilatura **2.2.2**, commit
-`f4684e100869274311107325e3b72e47cc78db20`. The independent port oracle retains
-its pre-release `ed2b4c86a5727110178172cb18080efe98fdcdb2` base plus the
-source-hashed changes in [testdata/go-worktree.json](testdata/go-worktree.json);
-these historical expectations have not been regenerated for the release.
+The compatibility target is Go-Trafilatura **2.2.6**. The current independent
+Go oracle in [testdata/go-worktree.json](testdata/go-worktree.json) records source
+hashes, modules, extraction results and the lxml-only fallback matrix. Historical
+Go helper and Python fixtures remain unchanged.
 Go continues to track Python Trafilatura 2.2.0, commit
 `c1bc9531a2a978326112ca9987e1382745116136`, for non-fallback extraction, with
 explicit retained Go behavior. Rust matches those Go choices: complete cleaning,
 final-body recovery measurement, automatic language metadata and normalized
 metadata selector IDs/classes. Python fixtures remain independent and unchanged.
 
-Fallbacks retain Mozilla-compatible Readability, DomDistiller, custom candidates,
-ordering, acceptance, lazy stopping, sanitization and recall rescue. Version
-2.2.5 adds explicit `ReadabilityFallback::ReadabilityLxml`, a native port of
-Python's bundled Readability; the library default remains Mozilla. DomDistiller
-is not jusText. The saved Go reference
+Non-FAST extraction permits only internally generated bundled readability-lxml.
+Mozilla, DomDistiller and supplied/custom candidates are never used by
+Trafilatura. Native recall and baseline recovery remain in FAST mode. Python's
+jusText recovery is not implemented. Standalone Mozilla/Go-ReadabilityV2 remains
+a separate, unchanged extractor. The saved Go reference
 is `72dce36bfe95502563533cf68a9050370a3d7081`; it identifies the historical
 helper/fallback oracle, not the current extraction target.
 
@@ -44,7 +43,7 @@ from complete native output comparisons. See [UPSTREAM.md](UPSTREAM.md).
 
 ```toml
 [dependencies]
-rust-trafilatura = "=2.2.5"
+rust-trafilatura = "=2.2.6"
 ```
 
 ```rust
@@ -70,12 +69,16 @@ assert!(html.contains("<p>"));
 
 - `extract(impl Read, &Options)` detects or accepts a charset, decompresses gzip
   including concatenated members, normalizes Unicode, removes soft hyphens and
-  parses HTML. Reader/decompression failures are returned as `Error::Io`.
+  parses HTML with scripting disabled. Reader/decompression failures are returned as `Error::Io`.
 - `parse_html(&str)` uses the ReadabilityV2 parser's output sink to build the
   extraction DOM without an intermediate Readability arena.
 - `parse_shared_html(&str)` and `parse_shared_bytes(&[u8])` construct a
   `SharedDocument` for all three native extractors. The byte API decodes bytes
   already in memory; it does not open files.
+- `parse_html_with_scripting(source, false)` and
+  `parse_shared_html_with_scripting(source, false)` build Trafilatura input with
+  parsed noscript children. Existing parser entry points keep scripting enabled;
+  preserve their original input for standalone Mozilla noscript image recovery.
 - `extract_shared_document(&SharedDocument, &Options)` borrows that input.
   The same object implements Readability's `DomSource` and DomDistiller's
   `AsRef<Document>` input contract, retaining namespaces for Readability.
@@ -87,17 +90,17 @@ assert!(html.contains("<p>"));
 
 `Options` controls balanced/precision/recall focus, comments, tables, links,
 images, per-call deduplication, target language, author exclusions, CSS pruning,
-output limits, date extraction and optional fallback candidates. Fallbacks,
+output limits, date extraction and the optional internal lxml fallback. Fallbacks,
 images and links are off by default; comments and tables are on. `Config`
 retains Go's thresholds. An explicit date configuration takes priority over the
 date mode, and a date override bypasses extraction.
 
-For Lxml candidates set `enable_fallback: true` and
-`readability_fallback: ReadabilityFallback::ReadabilityLxml`, leaving
-`fallback_candidates` unset so Trafilatura prepares its own input. The Apache-2.0
+Set `enable_fallback: true` for lxml, or `false` for FAST.
+Legacy `readability_fallback` and `fallback_candidates` fields are ignored;
+Trafilatura always prepares its own fallback input. The Apache-2.0
 port follows Python Trafilatura 2.2.0's bundled readability-lxml, including Arc90,
-starrhorne/iterationlabs and gfxmonk/python-readability ancestry. Readability 0.6.4
-also reuses prepared retries and exact cached scores. See [CHANGELOG.md](CHANGELOG.md);
+starrhorne/iterationlabs and gfxmonk/python-readability ancestry. Readability 0.6.5
+supplies the additive parser-mode API, not Trafilatura's fallback. See [CHANGELOG.md](CHANGELOG.md);
 optional `lab-profile` diagnostics are compiled out normally.
 
 The owned DOM is re-exported from Rust-DomDistiller. Prefer `parse_html` for the
@@ -123,7 +126,7 @@ before extraction starts; no content is omitted or materialized lazily.
 
 ## Worker
 
-Install from crates.io with `cargo install rust-trafilatura --version 2.2.5 --locked --bin rustHTML`,
+Install from crates.io with `cargo install rust-trafilatura --version 2.2.6 --locked --bin rustHTML`,
 or build a source checkout with `cargo build --locked --release --bin rustHTML`.
 
 With no arguments, the worker writes `ready` to stdout and reads newline-ended
@@ -148,10 +151,11 @@ Example command payload:
 `HTMLPath` takes precedence over `HTML`. A file beginning with `||XOR||` has its
 remaining bytes XOR-decoded with 255. Worker input is parsed directly, just as
 in Go; it does not use the library reader's normalization. Extraction enables
-fallbacks, images, links and tables, excludes comments, and returns Go's five
+images, links and tables, disables external fallback, excludes comments, and returns Go's five
 outer response sections. Only `Trafilatura` is populated. `Verbose` controls raw
 HTML; processed text retains formatting/link/image markers and ordered URLs.
-The worker selects the native Lxml fallback in 2.2.5; the library default is unchanged.
+The worker always uses FAST with scripting-disabled Trafilatura input. Extensive
+date extraction is explicitly retained. Native recall and baseline remain.
 
 Standalone `RunReadability`, `RunDistiller`, `RunMeta` and `RunDate` are explicitly
 unsupported. They return a file-protocol error or terminate the TCP request with
@@ -163,12 +167,12 @@ the Go worker's zero-valued output contract.
 
 | Library | Version | Role |
 | --- | --- | --- |
-| rust-domdistiller | 1.0.1 | Owned DOM and fallback extraction |
+| rust-domdistiller | 1.0.1 | Owned DOM types, not fallback extraction |
 | rust-htmldate | 1.10.2 | Date extraction |
 | rust-dateparser | 1.4.7 | Indirect through HtmlDate |
 | rust-dateutil | 2.9.1 | Indirect through date libraries |
 | rust-py3langid | 0.4.0 | Embedded native language identification |
-| rust-readability-v2 | 0.6.4 | HTML parser, shared-input view and Readability fallback |
+| rust-readability-v2 | 0.6.5 | HTML parser and shared-input view, not fallback extraction |
 | mimalloc | 0.1.48 | Default allocator for the worker and benchmark executables only |
 
 The crates.io distribution resolves every dependency from the registry. The Git
@@ -184,6 +188,9 @@ Compiler profile and allocator choices are part of the benchmark identity;
 executable timings do not describe every embedding application's configuration.
 
 ## Current Quality and Speed
+
+The following measurements are historical 2.2.5 results, not 2.2.6 measurements.
+Fresh 2.2.6 quality, timing and fallback-selection results are being collected.
 
 The [2026-09-28 benchmark](https://github.com/markusmobius/content-extractor-benchmark/blob/97c0f3f67261c275ceb2ab532ee05992dbce8cc7/README.md#results-2026-09-28) uses 2,659 saved
 development pages: 983 LegoNews, 181 ScrapingHub and 1,495 WCXB. Their F1
@@ -203,8 +210,8 @@ ThinLTO/mimalloc. Native extraction includes working copies, metadata and
 text rendering; file I/O, startup, IPC and scoring are excluded.
 Shared parsing is charged once per language/page: Go 7.308 and Rust 3.369 ms
 with fallback off; Go 8.710 and Rust 4.137 ms in the separate Lxml run.
-Lxml is explicitly selected and generates its own candidates; Mozilla remains
-the library's default selector. Comments and pagination are off; tables are on.
+That historical run explicitly selected Lxml and generated its own candidates;
+2.2.6 no longer offers Mozilla fallback. Comments and pagination are off; tables are on.
 DomDistiller is not Python jusText, and full Python parity is not claimed.
 These are not standalone request latencies or isolated old/new-version speedups.
 

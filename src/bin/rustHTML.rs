@@ -1,4 +1,4 @@
-use rust_trafilatura::{parse_html, text, Document, Kind, NodeId};
+use rust_trafilatura::{parse_html, parse_html_with_scripting, text, Document, Kind, NodeId};
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, value::RawValue, Value};
@@ -286,11 +286,13 @@ fn process(command: &str) -> io::Result<Vec<u8>> {
         exclude_comments: true,
         include_images: true,
         include_links: true,
-        enable_fallback: true,
-        readability_fallback: rust_trafilatura::ReadabilityFallback::ReadabilityLxml,
+        enable_fallback: false,
+        html_date_mode: rust_trafilatura::HtmlDateMode::Extensive,
         ..Default::default()
     };
-    if let Ok(result) = rust_trafilatura::extract_document(&parse_html(&source), &options) {
+    if let Ok(result) =
+        rust_trafilatura::extract_document(&parse_html_with_scripting(&source, false), &options)
+    {
         let raw = result
             .content_node
             .document
