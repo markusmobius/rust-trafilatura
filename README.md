@@ -251,9 +251,10 @@ code's [BSD-3-Clause terms](LICENSE-GO.txt). Reader adaptations retain
 adapted source files retain their original notices.
 
 Adrien Barbaresi created [adbar/trafilatura](https://github.com/adbar/trafilatura),
-the original Python package. Markus Mobius maintains the `go-trafilatura` and
-`rust-trafilatura` ports. The Go Authors and Radhi Fadlillah are credited for the
-adapted compatibility and reader code identified above.
+the original Python package. Radhi Fadlillah wrote the initial Go port from
+Python. Markus Mobius maintains the `go-trafilatura` and `rust-trafilatura` ports.
+The Go Authors and Radhi Fadlillah are also credited for the adapted compatibility
+and reader code identified above.
 
 The bundled readability-lxml ancestry credits Arc90 for the original algorithm,
 starrhorne and iterationlabs for the Ruby port, and gfxmonk for the Python port.

@@ -23,8 +23,12 @@ The README's License and Credits section must explicitly name:
 
 - Adrien Barbaresi, creator of the original `adbar/trafilatura` Python package;
 	link the upstream project and his 2021 ACL/IJCNLP paper.
+- Radhi Fadlillah, author of the initial `go-trafilatura` port from the Python
+	`adbar/trafilatura` package; explicitly distinguish initial port authorship
+	from current maintenance.
 - Markus Mobius, maintainer of `go-trafilatura` and `rust-trafilatura`;
-	distinguish these ports from Adrien Barbaresi's original work.
+	distinguish this maintenance from the original Python package and initial
+	Go port.
 - Arc90 for the original algorithm, starrhorne and iterationlabs for the Ruby
 	port, and gfxmonk for the Python port, as named in `adbar/trafilatura`'s
 	bundled readability-lxml header. Retain its links to the
