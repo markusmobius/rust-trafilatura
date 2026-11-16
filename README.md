@@ -23,7 +23,7 @@ Our extractor packages share three principles:
 
 ## Overview
 
-The current `rust-trafilatura` release is **2.2.8**. It accepts HTML readers or
+The current `rust-trafilatura` release is **2.2.9**. It accepts HTML readers or
 parsed trees and returns owned content/comment trees, plain text and metadata,
 including JSON-LD, dates and language. Tables, images, links and per-extraction
 deduplication are configurable. Input trees are preserved; no page fetching or
@@ -31,13 +31,14 @@ runtime Go/Python bridge is used. Callers own acquisition and concurrency.
 
 The behavioral reference is `go-trafilatura` 2.2.6: `adbar/trafilatura` 2.2.0's
 non-fallback core, documented Go differences and optional bundled readability-lxml.
-This documentation-only release preserves the preceding release's runtime
-source and dependency pins.
+Release 2.2.9 changes dependencies only: sibling crates and other libraries use
+compatible (`^`) rather than exact requirements, and the updated siblings drop
+the `zip` crate and the second html5ever generation. Runtime source is unchanged.
 
 ## Installation
 
 ```sh
-cargo add rust-trafilatura@=2.2.8
+cargo add rust-trafilatura@=2.2.9
 ```
 
 Use Rust 1.98.1 or newer and a native C build toolchain. Import the crate as
@@ -84,7 +85,7 @@ the same quality or execution time for every website.</p>
 
 Use `content_text` for text and `content_node` for the owned output tree;
 `metadata` contains title, author, date and language. Comment output is separate.
-See the [rust-trafilatura API reference](https://docs.rs/rust-trafilatura/2.2.8/rust_trafilatura/)
+See the [rust-trafilatura API reference](https://docs.rs/rust-trafilatura/2.2.9/rust_trafilatura/)
 for complete signatures and result types.
 
 ### Protocol Worker
@@ -92,7 +93,7 @@ for complete signatures and result types.
 The optional executable accepts saved-HTML file/TCP requests, not page downloads:
 
 ```sh
-cargo install rust-trafilatura --version 2.2.8 --locked --bin rustHTML
+cargo install rust-trafilatura --version 2.2.9 --locked --bin rustHTML
 ```
 
 It implements only `rust-trafilatura` extraction and always uses FAST. It is
@@ -131,8 +132,8 @@ discarding the article. Short, noisy or multilingual input can be mislabeled.
 The `mimalloc` feature controls the worker and benchmark executables' allocator.
 Use `--no-default-features` for their platform allocator. The library installs
 no global allocator; embedding applications retain control. Registry packages
-use registry dependencies, while the source checkout retains its pinned Git
-references in [Cargo.lock](Cargo.lock).
+use compatible registry dependency requirements, while the source checkout
+retains its pinned Git references in [Cargo.lock](Cargo.lock).
 
 ### Optional Fallback
 

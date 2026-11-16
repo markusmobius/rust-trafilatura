@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.9 - 2026-11-16
+
+- Use compatible (`^`) instead of exact (`=`) requirements for sibling crates
+  and other dependencies, so their patch releases (including security fixes)
+  reach downstream lockfiles without a new `rust-trafilatura` release.
+- Move to `rust-readability-v2` 0.6.8 (no `zip`, so its RustSec advisories no
+  longer apply; no `markup5ever` 0.14), `rust-domdistiller` 1.0.4 (html5ever
+  0.39), `rust-htmldate` 1.10.3 and `rust-dateparser` 1.4.9. This removes the
+  second html5ever stack and `windows-sys` 0.59 from the dependency graph.
+- Runtime source is unchanged. Output was byte-identical to 2.2.8 on 4,055
+  inputs in eight extraction configurations, including FAST and fallback.
+
 ## 2.2.8 - 2026-09-29
 
 - Documentation-only release of `rust-trafilatura`; runtime source and

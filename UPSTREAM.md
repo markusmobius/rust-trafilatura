@@ -1,5 +1,35 @@
 # Upstream and Port Ledger
 
+## Dependency Release 2.2.9
+
+`rust-trafilatura` 2.2.9 changes dependency requirements, not runtime source
+([#2](https://github.com/markusmobius/rust-trafilatura/issues/2)):
+
+- Sibling crates use compatible (`^`) requirements: `rust-readability-v2`
+  0.6.8, `rust-domdistiller` 1.0.4, `rust-htmldate` 1.10.3 and
+  `rust-py3langid` 0.4.0, so their patch releases reach downstream lockfiles.
+  `markup5ever`, `mimalloc` and `serde_stacker` are no longer exact pins either.
+- `rust-readability-v2` 0.6.8 drops `zip` (RUSTSEC-2026-0367, -0368, -0369 and
+  -0429 no longer apply to this graph) and `markup5ever` 0.14.
+  `rust-domdistiller` 1.0.4 builds trees with html5ever 0.39 instead of 0.29.
+  `rust-htmldate` 1.10.3 and `rust-readability-v2` use `winreg` 0.56.
+  `rust-dateparser` 1.4.9 relaxes its `rust-dateutil` pin.
+- The html5ever 0.29 generation (html5ever, markup5ever, markup5ever_rcdom,
+  xml5ever, tendril, string_cache, phf 0.11) and `windows-sys` 0.59 are gone.
+  The remaining duplicate versions come from third-party crates: `phf`
+  0.12/0.13 (`chrono-tz` 0.10.4 versus html5ever's `web_atoms`) and `syn` 2/3
+  (Windows `windows-core` proc macros versus ICU's `displaydoc`).
+
+Validation on Rust 1.98.1 Linux (WSL), `TZ=UTC`: formatting, strict Clippy,
+all tests and doctests, and the ignored `direct_parser_html_corpus` check. A
+differential run of 2.2.8 against this dependency graph covered 4,055 inputs (3,172 benchmark
+records from LegoNews, ScrapingHub and WCXB plus 883 test-fixture documents) in
+eight configurations: FAST, readability-lxml fallback, fallback with recall,
+comments, images, links and extensive dates, FAST precision, the worker path,
+both shared-document modes and parsed-tree hashes. All 32,440 outputs were
+byte-identical. Measured 2.2.6 results and their reports are not relabeled or
+rerun.
+
 ## Documentation Release 2.2.8
 
 `rust-trafilatura` 2.2.8 packages the approved nine-section README and the full
@@ -218,11 +248,11 @@ Standalone Mozilla Readability is independent and unchanged.
 | Go-DomDistiller | `25b8d046ffb4053bf68345d6fa59bc9ae1961ad8` |
 | Go HTML parser | `golang.org/x/net v0.59.0` |
 | Rust toolchain | 1.98.1, edition 2021 |
-| Rust-Readability | 0.6.5, Git tag `v0.6.5`; exact commit in `Cargo.lock` |
-| Rust-DomDistiller | 1.0.1, Git `e95bff0cea7f7b9639abe04a8531b220b3ee4a6e` |
-| Rust-Py3langid | Registry `rust-py3langid =0.4.0` |
-| Rust-HtmlDate | 1.10.2, Git `912ede5196710f23214bb5a831437c35ed5ff5b6` |
-| Rust-DateParser | 1.4.7, Git `1e3e2feccd8662113e4092ca87a5567e4e23bc3c` |
+| Rust-Readability | 0.6.8, Git tag `v0.6.8`; exact commit in `Cargo.lock` |
+| Rust-DomDistiller | 1.0.4, Git tag `v1.0.4`; exact commit in `Cargo.lock` |
+| Rust-Py3langid | Registry `rust-py3langid ^0.4.0` |
+| Rust-HtmlDate | 1.10.3, Git tag `v1.10.3`; exact commit in `Cargo.lock` |
+| Rust-DateParser | 1.4.9, Git `f8901a078be0be4e846b05c49375e60a58f185d7` |
 | Rust-Dateutil | 2.9.1, Git `3a7537dd3a4e223756fa31fb1941a10da4c78b30` |
 
 The port is native, accepts supplied input, and leaves scheduling to callers.
@@ -233,8 +263,9 @@ package. Publication does not upgrade the parent application automatically.
 
 The source checkout retains the Git pins above; [Cargo.lock](Cargo.lock) records
 its exact sources and checksums. Cargo registry packaging resolves the same
-version requirements from crates.io, so the published crate has a registry-only
-dependency graph. Both distributions contain the same runtime implementation,
+compatible (`^`) version requirements from crates.io, so the published crate has
+a registry-only dependency graph and downstream lockfiles can take compatible
+sibling patch releases. Both distributions contain the same runtime implementation,
 including HtmlDate's tree import and Readability's shared-input APIs. Neither
 requires private Git access or sibling worktrees. Existing tags are unchanged.
 
