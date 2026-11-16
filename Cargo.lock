@@ -769,9 +769,9 @@ dependencies = [
 
 [[package]]
 name = "rust-py3langid"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5044c8986b73193d3dd305fd1958645c914d13d3dddc0183b5561e49f900cfce"
+checksum = "9c77f478d7a7e0671dc42d0eb77aa9afc0e6edaf724dec637bd29f08d6e7c7d2"
 dependencies = [
  "flate2",
  "icu_casemap",
